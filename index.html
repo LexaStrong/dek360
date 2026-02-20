@@ -3,13 +3,9 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description"
     content="DEK360 Ghana — Your gateway to Ghana's culture, entertainment, news, and stories. 173K+ YouTube subscribers.">
-  <meta name="theme-color" content="#0D1117">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>DEK360 Ghana — Ghana's Culture. Your Screen.</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -45,104 +41,79 @@
         <a href="videos.html" class="btn btn-secondary">Watch Videos</a>
       </div>
     </div>
-    <div class="hero-scroll-indicator">
-      <span>Scroll down</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 5v14M5 12l7 7 7-7" />
-      </svg>
+  </section>
+
+  <!-- Latest Posts Section -->
+  <section class="section" id="latest-posts">
+    <div class="container">
+      <div class="section-header fade-in">
+        <h2>Latest Stories</h2>
+        <p>Stay updated with the latest news, culture, and events from Ghana and beyond.</p>
+      </div>
+      <div class="grid-3 fade-in" id="latestPostsGrid">
+        <!-- Populated by JS -->
+      </div>
+      <div style="text-align: center; margin-top: var(--sp-2xl);">
+        <a href="blog.html" class="btn btn-secondary">View All Posts →</a>
+      </div>
     </div>
+  </section>
 
-    <!-- Latest Posts Section -->
-    <section class="section" id="latest-posts">
-      <div class="container">
-        <div class="section-header fade-in">
-          <h2>Latest Stories</h2>
-          <p>Stay updated with the latest news, culture, and events from Ghana and beyond.</p>
-        </div>
-        <div class="grid-3 fade-in" id="latestPostsGrid">
-          <!-- Populated by JS -->
-        </div>
-        <div style="text-align: center; margin-top: var(--sp-2xl);">
-          <a href="blog.html" class="btn btn-secondary">View All Posts →</a>
-        </div>
+  <!-- Featured Video Section -->
+  <section class="section" style="background: var(--clr-bg-deep);">
+    <div class="container">
+      <div class="section-header fade-in">
+        <h2>Featured Video</h2>
+        <p>Check out our latest video content on YouTube.</p>
       </div>
-    </section>
-
-    <!-- Featured Video Section -->
-    <section class="section" style="background: var(--clr-bg-deep);">
-      <div class="container">
-        <div class="section-header fade-in">
-          <h2>Featured Video</h2>
-          <p>Check out our latest video content on YouTube.</p>
-        </div>
-        <div class="fade-in" id="featuredVideoContainer" style="max-width: 800px; margin: 0 auto;">
-          <div class="video-card">
-            <div class="video-wrapper">
-              <iframe id="featuredIframe" src="https://www.youtube.com/embed/7A2S7vY2myM" title="Featured DEK360 Video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen loading="lazy"></iframe>
-            </div>
-            <div class="video-info">
-              <h3 id="featuredTitle">Made In Taadi Goes Wild as Samini, Sarkodie, Medikal & Top Acts Storm Takoradi 🔥
-              </h3>
-              <p id="featuredDesc">Watch our latest upload directly from the DEK360 YouTube channel.</p>
-            </div>
+      <div class="fade-in" id="featuredVideoContainer" style="max-width: 800px; margin: 0 auto;">
+        <div class="video-card">
+          <div class="video-wrapper">
+            <iframe id="featuredIframe" src="https://www.youtube.com/embed/7A2S7vY2myM" title="Featured DEK360 Video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen loading="lazy"></iframe>
+          </div>
+          <div class="video-info">
+            <h3 id="featuredTitle">Made In Taadi Goes Wild as Samini, Sarkodie, Medikal & Top Acts Storm Takoradi 🔥
+            </h3>
+            <p id="featuredDesc">Watch our latest upload directly from the DEK360 YouTube channel.</p>
           </div>
         </div>
-        <div style="text-align: center; margin-top: var(--sp-2xl);">
-          <a href="videos.html" class="btn btn-primary">Watch More Videos →</a>
-        </div>
       </div>
-    </section>
-
-    <!-- Newsletter Section -->
-    <section class="section newsletter-section">
-      <div class="container">
-        <div class="newsletter-card fade-in">
-          <div class="newsletter-content">
-            <div class="newsletter-icon">📬</div>
-            <h2>Stay in the Loop</h2>
-            <p>Get the latest Ghanaian stories, videos, and cultural updates delivered straight to your inbox.</p>
-          </div>
-          <form class="newsletter-form" onsubmit="handleNewsletterSubmit(event)">
-            <div class="newsletter-input-group">
-              <input type="email" id="newsletterEmail" placeholder="Enter your email address" required>
-              <button type="submit" class="btn btn-primary">Subscribe</button>
-            </div>
-            <p class="newsletter-hint">Join 5,000+ subscribers. No spam, ever. Unsubscribe anytime.</p>
-          </form>
-        </div>
+      <div style="text-align: center; margin-top: var(--sp-2xl);">
+        <a href="videos.html" class="btn btn-primary">Watch More Videos →</a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Social Bar Section -->
-    <section class="section">
-      <div class="container">
-        <div class="section-header fade-in">
-          <h2>Connect With Us</h2>
-          <p>Follow DEK360 on all your favorite platforms.</p>
-        </div>
-        <div class="fade-in" id="socialGrid"
-          style="display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-lg); max-width: 700px; margin: 0 auto;">
-          <!-- Populated by JS -->
-        </div>
+  <!-- Social Bar Section -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header fade-in">
+        <h2>Connect With Us</h2>
+        <p>Follow DEK360 on all your favorite platforms.</p>
       </div>
-    </section>
+      <div class="fade-in" id="socialGrid"
+        style="display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-lg); max-width: 700px; margin: 0 auto;">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </section>
 
-    <script src="js/app.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        injectNav('home');
-        injectFooter();
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      injectNav('home');
+      injectFooter();
 
-        // Latest posts
-        const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]')
-          .filter(p => p.published)
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 3);
+      // Latest posts
+      const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]')
+        .filter(p => p.published)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 3);
 
-        const grid = document.getElementById('latestPostsGrid');
-        grid.innerHTML = posts.map(p => `
+      const grid = document.getElementById('latestPostsGrid');
+      grid.innerHTML = posts.map(p => `
         <a href="post.html?id=${p.id}" class="card" style="text-decoration:none; color:inherit;">
           <div class="card-image">
             <img src="${p.image}" alt="${p.title}" loading="lazy">
@@ -159,32 +130,32 @@
         </a>
       `).join('');
 
-        // Social grid
-        const socialGrid = document.getElementById('socialGrid');
-        socialGrid.innerHTML = SOCIAL_LINKS.map(s => `
+      // Social grid
+      const socialGrid = document.getElementById('socialGrid');
+      socialGrid.innerHTML = SOCIAL_LINKS.map(s => `
         <a href="${s.url}" target="_blank" rel="noopener" class="stat-card" style="text-decoration:none; color:inherit; cursor:pointer;">
           <div style="font-size:1.6rem; margin-bottom:var(--sp-sm); color:var(--clr-primary-light);">${s.icon}</div>
           <div style="font-size:var(--fs-sm); font-weight:600;">${s.name}</div>
         </a>
       `).join('');
-        // Featured Video dynamic update
-        function updateFeaturedVideo() {
-          const videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
-          if (videos.length > 0) {
-            const latest = videos[0]; // Sorted by date in syncYouTubeVideos
-            document.getElementById('featuredIframe').src = `https://www.youtube.com/embed/${latest.youtubeId}`;
-            document.getElementById('featuredTitle').innerText = latest.title;
-            if (latest.isAuto) {
-              document.getElementById('featuredDesc').innerHTML = `<span>● Latest Upload</span> · ${formatDate(latest.date)}`;
-              document.getElementById('featuredDesc').style.color = 'var(--clr-primary-light)';
-            }
+      // Featured Video dynamic update
+      function updateFeaturedVideo() {
+        const videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
+        if (videos.length > 0) {
+          const latest = videos[0]; // Sorted by date in syncYouTubeVideos
+          document.getElementById('featuredIframe').src = `https://www.youtube.com/embed/${latest.youtubeId}`;
+          document.getElementById('featuredTitle').innerText = latest.title;
+          if (latest.isAuto) {
+            document.getElementById('featuredDesc').innerHTML = `<span>● Latest Upload</span> · ${formatDate(latest.date)}`;
+            document.getElementById('featuredDesc').style.color = 'var(--clr-primary-light)';
           }
         }
+      }
 
-        document.addEventListener('videosSynced', updateFeaturedVideo);
-        updateFeaturedVideo();
-      });
-    </script>
+      document.addEventListener('videosSynced', updateFeaturedVideo);
+      updateFeaturedVideo();
+    });
+  </script>
 </body>
 
 </html>

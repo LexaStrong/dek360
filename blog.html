@@ -3,12 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Read the latest news, culture, and events from Ghana — DEK360 Blog.">
-    <meta name="theme-color" content="#0D1117">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Blog — DEK360 Ghana</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -24,18 +20,11 @@
 
     <section class="section">
         <div class="container">
-            <div class="blog-search-bar fade-in">
-                <div class="search-input-wrap">
-                    <span class="search-icon" id="blogSearchIcon"></span>
-                    <input type="search" id="blogSearch" placeholder="Search posts..." oninput="onBlogSearch(this.value)">
-                </div>
-            </div>
             <div class="filter-tabs">
                 <button class="filter-tab active" data-cat="All" onclick="filterByCategory('All')">All</button>
                 <button class="filter-tab" data-cat="News" onclick="filterByCategory('News')">News</button>
                 <button class="filter-tab" data-cat="Culture" onclick="filterByCategory('Culture')">Culture</button>
                 <button class="filter-tab" data-cat="Events" onclick="filterByCategory('Events')">Events</button>
-                <button class="filter-tab" data-cat="Lifestyle" onclick="filterByCategory('Lifestyle')">Lifestyle</button>
             </div>
             <div class="grid-3" id="blogGrid">
                 <!-- Populated by blog.js -->
@@ -46,12 +35,6 @@
 
     <script src="js/app.js"></script>
     <script src="js/blog.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inject search icon from app.js icons
-            document.getElementById('blogSearchIcon').innerHTML = ICONS.search;
-        });
-    </script>
 </body>
 
 </html>

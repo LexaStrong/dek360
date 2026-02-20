@@ -1555,35 +1555,7 @@ ol {
   }
 
   .admin-sidebar {
-    display: block;
-    position: fixed;
-    top: var(--nav-h);
-    left: -260px;
-    width: 250px;
-    height: calc(100vh - var(--nav-h));
-    z-index: 900;
-    overflow-y: auto;
-    transition: left var(--transition-base);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .admin-sidebar.open {
-    left: 0;
-  }
-
-  .admin-main {
-    padding: var(--sp-lg);
-    overflow-x: hidden;
-  }
-
-  .admin-table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .admin-stats {
-    grid-template-columns: repeat(2, 1fr);
+    display: none;
   }
 
   .timeline::before {
@@ -1614,20 +1586,9 @@ ol {
     letter-spacing: -1px;
   }
 
-  /* Keep hero stats horizontal on small screens */
   .hero-stats {
-    flex-direction: row;
-    justify-content: center;
+    flex-direction: column;
     gap: var(--sp-lg);
-    flex-wrap: nowrap;
-  }
-
-  .hero-stat .number {
-    font-size: var(--fs-xl);
-  }
-
-  .hero-stat .label {
-    font-size: 0.65rem;
   }
 
   .stat-grid {
@@ -1635,7 +1596,7 @@ ol {
   }
 
   .admin-stats {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .pagination {

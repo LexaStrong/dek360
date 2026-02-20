@@ -3,17 +3,17 @@
 const ADMIN_PASSWORD = '@Dek360ghana';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const isAuth = sessionStorage.getItem('dek360_admin_auth');
+  const isAuth = sessionStorage.getItem('dek360_admin_auth');
 
-    if (!isAuth) {
-        showAuthGate();
-    } else {
-        showDashboard();
-    }
+  if (!isAuth) {
+    showAuthGate();
+  } else {
+    showDashboard();
+  }
 });
 
 function showAuthGate() {
-    document.getElementById('adminApp').innerHTML = `
+  document.getElementById('adminApp').innerHTML = `
     <div class="auth-gate">
       <div class="auth-box">
         <div style="font-size:2rem; margin-bottom:var(--sp-md);">🔒</div>
@@ -27,36 +27,39 @@ function showAuthGate() {
       </div>
     </div>
   `;
-    document.getElementById('adminPass').focus();
+  document.getElementById('adminPass').focus();
 }
 
 window.attemptLogin = function () {
-    const pass = document.getElementById('adminPass').value;
-    if (pass === ADMIN_PASSWORD) {
-        sessionStorage.setItem('dek360_admin_auth', 'true');
-        showDashboard();
-    } else {
-        document.getElementById('authError').style.display = 'block';
-        document.getElementById('adminPass').value = '';
-        document.getElementById('adminPass').focus();
-    }
+  const pass = document.getElementById('adminPass').value;
+  if (pass === ADMIN_PASSWORD) {
+    sessionStorage.setItem('dek360_admin_auth', 'true');
+    showDashboard();
+  } else {
+    document.getElementById('authError').style.display = 'block';
+    document.getElementById('adminPass').value = '';
+    document.getElementById('adminPass').focus();
+  }
 };
 
 function showDashboard() {
-    const app = document.getElementById('adminApp');
-    app.innerHTML = '';
+  const app = document.getElementById('adminApp');
+  app.innerHTML = '';
 
-    // Inject nav
-    injectNav('admin');
+  // Inject nav
+  injectNav('admin');
 
-    app.innerHTML = `
+  app.innerHTML = `
     <div class="admin-layout">
-      <aside class="admin-sidebar">
+      <button class="admin-sidebar-toggle" id="adminSidebarToggle" onclick="toggleAdminSidebar()" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <aside class="admin-sidebar" id="adminSidebar">
         <h3>Admin Panel</h3>
         <nav class="admin-nav">
-          <a href="#" class="active" onclick="showSection('dashboard'); return false;">${ICONS.dashboard} Dashboard</a>
-          <a href="#" onclick="showSection('posts'); return false;">${ICONS.posts} Posts</a>
-          <a href="#" onclick="showSection('videos_section'); return false;">${ICONS.videos_icon} Videos</a>
+          <a href="#" class="active" onclick="showSection('dashboard'); closeSidebarMobile(); return false;">${ICONS.dashboard} Dashboard</a>
+          <a href="#" onclick="showSection('posts'); closeSidebarMobile(); return false;">${ICONS.posts} Posts</a>
+          <a href="#" onclick="showSection('videos_section'); closeSidebarMobile(); return false;">${ICONS.videos_icon} Videos</a>
           <a href="#" onclick="adminLogout(); return false;" style="margin-top:var(--sp-xl); color:var(--clr-danger);">Logout</a>
         </nav>
       </aside>
@@ -145,30 +148,41 @@ function showDashboard() {
     </div>
   `;
 
-    injectFooter();
-    showSection('dashboard');
+  injectFooter();
+  showSection('dashboard');
 }
 
 window.showSection = function (section) {
-    // Update sidebar active state
-    document.querySelectorAll('.admin-nav a').forEach(a => a.classList.remove('active'));
-    const links = document.querySelectorAll('.admin-nav a');
-    if (section === 'dashboard') links[0]?.classList.add('active');
-    if (section === 'posts') links[1]?.classList.add('active');
-    if (section === 'videos_section') links[2]?.classList.add('active');
+  // Update sidebar active state
+  document.querySelectorAll('.admin-nav a').forEach(a => a.classList.remove('active'));
+  const links = document.querySelectorAll('.admin-nav a');
+  if (section === 'dashboard') links[0]?.classList.add('active');
+  if (section === 'posts') links[1]?.classList.add('active');
+  if (section === 'videos_section') links[2]?.classList.add('active');
 
-    const main = document.getElementById('adminMain');
+  const main = document.getElementById('adminMain');
 
-    if (section === 'dashboard') {
-        const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
-        const videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
-        const published = posts.filter(p => p.published).length;
+  if (section === 'dashboard') {
+    const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
+    const videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
+    const published = posts.filter(p => p.published).length;
 
-        main.innerHTML = `
+    // Sync status
+    const lastSync = localStorage.getItem('dek360_lastSync');
+    const syncStatusHTML = `
+          <div class="admin-sync-status">
+            <span class="sync-dot ${lastSync ? 'synced' : 'unsynced'}"></span>
+            <span>${lastSync ? 'YouTube synced: ' + formatDate(lastSync) : 'Not yet synced'}</span>
+            <button class="btn btn-sm btn-secondary" onclick="manualSync()">Sync Now</button>
+          </div>
+        `;
+
+    main.innerHTML = `
       <div class="admin-header">
         <h1>Dashboard</h1>
         <span style="color:var(--clr-text-muted); font-size:var(--fs-sm);">Welcome back, Admin</span>
       </div>
+      ${syncStatusHTML}
       <div class="admin-stats">
         <div class="admin-stat-card">
           <h3>Total Posts</h3>
@@ -198,40 +212,30 @@ window.showSection = function (section) {
         </tbody>
       </table>
     `;
-    }
+  }
 
-    if (section === 'posts') {
-        const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
-        main.innerHTML = `
+  if (section === 'posts') {
+    const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
+    main.innerHTML = `
       <div class="admin-header">
         <h1>Manage Posts</h1>
         <button class="btn btn-primary" onclick="openCreatePost()">${ICONS.plus} New Post</button>
       </div>
-      <table class="admin-table">
+      <div class="admin-search-bar">
+        <input type="search" id="adminPostSearch" placeholder="Search posts by title..." oninput="filterAdminPosts(this.value)">
+      </div>
+      <table class="admin-table" id="adminPostsTable">
         <thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${posts.map(p => `
-            <tr>
-              <td style="max-width:300px;">${p.title}</td>
-              <td>${p.category}</td>
-              <td>${formatDate(p.date)}</td>
-              <td><span class="badge ${p.published ? 'badge-published' : 'badge-draft'}">${p.published ? 'Published' : 'Draft'}</span></td>
-              <td>
-                <div style="display:flex; gap:var(--sp-sm);">
-                  <button class="btn btn-sm btn-secondary" onclick="editPost('${p.id}')">${ICONS.edit}</button>
-                  <button class="btn btn-sm btn-danger" onclick="deletePost('${p.id}')">${ICONS.trash}</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
+        <tbody id="adminPostsBody">
+          ${renderAdminPostRows(posts)}
         </tbody>
       </table>
     `;
-    }
+  }
 
-    if (section === 'videos_section') {
-        const videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
-        main.innerHTML = `
+  if (section === 'videos_section') {
+    const videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
+    main.innerHTML = `
       <div class="admin-header">
         <h1>Manage Videos</h1>
         <button class="btn btn-primary" onclick="openCreateVideo()">${ICONS.plus} Add Video</button>
@@ -255,138 +259,195 @@ window.showSection = function (section) {
         </tbody>
       </table>
     `;
-    }
+  }
 };
 
 // ——— Post CRUD ———
 window.openCreatePost = function () {
-    document.getElementById('modalTitle').textContent = 'Create Post';
-    document.getElementById('postForm').reset();
-    document.getElementById('postId').value = '';
-    document.getElementById('postPublished').checked = true;
-    document.getElementById('postModal').classList.add('active');
+  document.getElementById('modalTitle').textContent = 'Create Post';
+  document.getElementById('postForm').reset();
+  document.getElementById('postId').value = '';
+  document.getElementById('postPublished').checked = true;
+  document.getElementById('postModal').classList.add('active');
 };
 
 window.editPost = function (id) {
-    const post = getPostById(id);
-    if (!post) return;
-    document.getElementById('modalTitle').textContent = 'Edit Post';
-    document.getElementById('postId').value = post.id;
-    document.getElementById('postTitleInput').value = post.title;
-    document.getElementById('postExcerpt').value = post.excerpt;
-    document.getElementById('postCategory').value = post.category;
-    document.getElementById('postImage').value = post.image || '';
-    document.getElementById('postBody').value = post.body || '';
-    document.getElementById('postPublished').checked = post.published;
-    document.getElementById('postModal').classList.add('active');
+  const post = getPostById(id);
+  if (!post) return;
+  document.getElementById('modalTitle').textContent = 'Edit Post';
+  document.getElementById('postId').value = post.id;
+  document.getElementById('postTitleInput').value = post.title;
+  document.getElementById('postExcerpt').value = post.excerpt;
+  document.getElementById('postCategory').value = post.category;
+  document.getElementById('postImage').value = post.image || '';
+  document.getElementById('postBody').value = post.body || '';
+  document.getElementById('postPublished').checked = post.published;
+  document.getElementById('postModal').classList.add('active');
 };
 
 window.savePost = function (e) {
-    e.preventDefault();
-    const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
-    const id = document.getElementById('postId').value;
-    const data = {
-        title: document.getElementById('postTitleInput').value,
-        excerpt: document.getElementById('postExcerpt').value,
-        category: document.getElementById('postCategory').value,
-        image: document.getElementById('postImage').value,
-        body: document.getElementById('postBody').value,
-        published: document.getElementById('postPublished').checked,
-        date: new Date().toISOString().split('T')[0]
-    };
+  e.preventDefault();
+  const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
+  const id = document.getElementById('postId').value;
+  const data = {
+    title: document.getElementById('postTitleInput').value,
+    excerpt: document.getElementById('postExcerpt').value,
+    category: document.getElementById('postCategory').value,
+    image: document.getElementById('postImage').value,
+    body: document.getElementById('postBody').value,
+    published: document.getElementById('postPublished').checked,
+    date: new Date().toISOString().split('T')[0]
+  };
 
-    if (id) {
-        const idx = posts.findIndex(p => p.id === id);
-        if (idx !== -1) {
-            posts[idx] = { ...posts[idx], ...data };
-            showToast('Post updated successfully');
-        }
-    } else {
-        data.id = generateId();
-        posts.unshift(data);
-        showToast('Post created successfully');
+  if (id) {
+    const idx = posts.findIndex(p => p.id === id);
+    if (idx !== -1) {
+      posts[idx] = { ...posts[idx], ...data };
+      showToast('Post updated successfully');
     }
+  } else {
+    data.id = generateId();
+    posts.unshift(data);
+    showToast('Post created successfully');
+  }
 
-    localStorage.setItem('dek360_posts', JSON.stringify(posts));
-    closeModal();
-    showSection('posts');
+  localStorage.setItem('dek360_posts', JSON.stringify(posts));
+  closeModal();
+  showSection('posts');
 };
 
 window.deletePost = function (id) {
-    if (!confirm('Are you sure you want to delete this post?')) return;
-    let posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
-    posts = posts.filter(p => p.id !== id);
-    localStorage.setItem('dek360_posts', JSON.stringify(posts));
-    showToast('Post deleted', 'warning');
-    showSection('posts');
+  if (!confirm('Are you sure you want to delete this post?')) return;
+  let posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
+  posts = posts.filter(p => p.id !== id);
+  localStorage.setItem('dek360_posts', JSON.stringify(posts));
+  showToast('Post deleted', 'warning');
+  showSection('posts');
 };
 
 window.closeModal = function () {
-    document.getElementById('postModal').classList.remove('active');
+  document.getElementById('postModal').classList.remove('active');
 };
 
 // ——— Video CRUD ———
 window.openCreateVideo = function () {
-    document.getElementById('videoModalTitle').textContent = 'Add Video';
-    document.getElementById('videoForm').reset();
-    document.getElementById('videoId').value = '';
-    document.getElementById('videoModal').classList.add('active');
+  document.getElementById('videoModalTitle').textContent = 'Add Video';
+  document.getElementById('videoForm').reset();
+  document.getElementById('videoId').value = '';
+  document.getElementById('videoModal').classList.add('active');
 };
 
 window.editVideo = function (id) {
-    const videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
-    const video = videos.find(v => v.id === id);
-    if (!video) return;
-    document.getElementById('videoModalTitle').textContent = 'Edit Video';
-    document.getElementById('videoId').value = video.id;
-    document.getElementById('videoTitleInput').value = video.title;
-    document.getElementById('videoYoutubeId').value = video.youtubeId;
-    document.getElementById('videoCategory').value = video.category;
-    document.getElementById('videoModal').classList.add('active');
+  const videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
+  const video = videos.find(v => v.id === id);
+  if (!video) return;
+  document.getElementById('videoModalTitle').textContent = 'Edit Video';
+  document.getElementById('videoId').value = video.id;
+  document.getElementById('videoTitleInput').value = video.title;
+  document.getElementById('videoYoutubeId').value = video.youtubeId;
+  document.getElementById('videoCategory').value = video.category;
+  document.getElementById('videoModal').classList.add('active');
 };
 
 window.saveVideo = function (e) {
-    e.preventDefault();
-    let videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
-    const id = document.getElementById('videoId').value;
-    const data = {
-        title: document.getElementById('videoTitleInput').value,
-        youtubeId: document.getElementById('videoYoutubeId').value,
-        category: document.getElementById('videoCategory').value,
-        date: new Date().toISOString().split('T')[0]
-    };
+  e.preventDefault();
+  let videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
+  const id = document.getElementById('videoId').value;
+  const data = {
+    title: document.getElementById('videoTitleInput').value,
+    youtubeId: document.getElementById('videoYoutubeId').value,
+    category: document.getElementById('videoCategory').value,
+    date: new Date().toISOString().split('T')[0]
+  };
 
-    if (id) {
-        const idx = videos.findIndex(v => v.id === id);
-        if (idx !== -1) {
-            videos[idx] = { ...videos[idx], ...data };
-            showToast('Video updated successfully');
-        }
-    } else {
-        data.id = generateId();
-        videos.unshift(data);
-        showToast('Video added successfully');
+  if (id) {
+    const idx = videos.findIndex(v => v.id === id);
+    if (idx !== -1) {
+      videos[idx] = { ...videos[idx], ...data };
+      showToast('Video updated successfully');
     }
+  } else {
+    data.id = generateId();
+    videos.unshift(data);
+    showToast('Video added successfully');
+  }
 
-    localStorage.setItem('dek360_videos', JSON.stringify(videos));
-    closeVideoModal();
-    showSection('videos_section');
+  localStorage.setItem('dek360_videos', JSON.stringify(videos));
+  closeVideoModal();
+  showSection('videos_section');
 };
 
 window.deleteVideo = function (id) {
-    if (!confirm('Are you sure you want to delete this video?')) return;
-    let videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
-    videos = videos.filter(v => v.id !== id);
-    localStorage.setItem('dek360_videos', JSON.stringify(videos));
-    showToast('Video deleted', 'warning');
-    showSection('videos_section');
+  if (!confirm('Are you sure you want to delete this video?')) return;
+  let videos = JSON.parse(localStorage.getItem('dek360_videos') || '[]');
+  videos = videos.filter(v => v.id !== id);
+  localStorage.setItem('dek360_videos', JSON.stringify(videos));
+  showToast('Video deleted', 'warning');
+  showSection('videos_section');
 };
 
 window.closeVideoModal = function () {
-    document.getElementById('videoModal').classList.remove('active');
+  document.getElementById('videoModal').classList.remove('active');
 };
 
 window.adminLogout = function () {
-    sessionStorage.removeItem('dek360_admin_auth');
-    location.reload();
+  sessionStorage.removeItem('dek360_admin_auth');
+  location.reload();
+};
+
+// ——— Helper: render post rows ———
+function renderAdminPostRows(posts) {
+  if (!posts || posts.length === 0) {
+    return '<tr><td colspan="5" style="text-align:center; color:var(--clr-text-muted); padding:var(--sp-xl);">No posts found.</td></tr>';
+  }
+  return posts.map(p => `
+    <tr>
+      <td style="max-width:300px;">${p.title}</td>
+      <td>${p.category}</td>
+      <td>${formatDate(p.date)}</td>
+      <td><span class="badge ${p.published ? 'badge-published' : 'badge-draft'}">${p.published ? 'Published' : 'Draft'}</span></td>
+      <td>
+        <div style="display:flex; gap:var(--sp-sm);">
+          <button class="btn btn-sm btn-secondary" onclick="editPost('${p.id}')">${ICONS.edit}</button>
+          <button class="btn btn-sm btn-danger" onclick="deletePost('${p.id}')">${ICONS.trash}</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ——— Admin Posts Live Search ———
+window.filterAdminPosts = function (query) {
+  const posts = JSON.parse(localStorage.getItem('dek360_posts') || '[]');
+  const q = query.toLowerCase().trim();
+  const filtered = q ? posts.filter(p => p.title.toLowerCase().includes(q) || (p.excerpt || '').toLowerCase().includes(q)) : posts;
+  const tbody = document.getElementById('adminPostsBody');
+  if (tbody) tbody.innerHTML = renderAdminPostRows(filtered);
+};
+
+// ——— Manual YouTube Sync ———
+window.manualSync = async function () {
+  showToast('Syncing YouTube feed...', 'success');
+  await syncYouTubeVideos();
+  const now = new Date().toISOString().split('T')[0];
+  localStorage.setItem('dek360_lastSync', now);
+  showToast('YouTube synced successfully!', 'success');
+  showSection('dashboard');
+};
+
+// ——— Admin Mobile Sidebar ———
+window.toggleAdminSidebar = function () {
+  const sidebar = document.getElementById('adminSidebar');
+  const btn = document.getElementById('adminSidebarToggle');
+  if (sidebar) sidebar.classList.toggle('open');
+  if (btn) btn.classList.toggle('active');
+};
+
+window.closeSidebarMobile = function () {
+  if (window.innerWidth <= 768) {
+    const sidebar = document.getElementById('adminSidebar');
+    const btn = document.getElementById('adminSidebarToggle');
+    if (sidebar) sidebar.classList.remove('open');
+    if (btn) btn.classList.remove('active');
+  }
 };
