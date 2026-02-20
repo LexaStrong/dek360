@@ -7,11 +7,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const POSTS_PER_PAGE = 6;
     let currentPage = 1;
     let currentCategory = 'All';
+    let searchQuery = '';
 
     // Check URL for category filter
     const urlParams = new URLSearchParams(window.location.search);
     const catParam = urlParams.get('cat');
     if (catParam) currentCategory = catParam;
+
+    // Set active tab if category was set via URL
+    if (catParam) {
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.cat === catParam);
+        });
+    }
 
     function getPosts() {
         return JSON.parse(localStorage.getItem('dek360_posts') || '[]')
@@ -20,30 +28,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function filterPosts(posts) {
-        if (currentCategory === 'All') return posts;
-        return posts.filter(p => p.category === currentCategory);
+        let result = posts;
+        if (currentCategory !== 'All') {
+            result = result.filter(p => p.category === currentCategory);
+        }
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase().trim();
+            result = result.filter(p =>
+                p.title.toLowerCase().includes(q) ||
+                (p.excerpt || '').toLowerCase().includes(q)
+            );
+        }
+        return result;
     }
 
     function renderPosts() {
         const allPosts = getPosts();
         const filtered = filterPosts(allPosts);
         const totalPages = Math.ceil(filtered.length / POSTS_PER_PAGE);
+        if (currentPage > totalPages) currentPage = 1;
         const start = (currentPage - 1) * POSTS_PER_PAGE;
         const pagePosts = filtered.slice(start, start + POSTS_PER_PAGE);
 
         const grid = document.getElementById('blogGrid');
         if (pagePosts.length === 0) {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:var(--sp-3xl); color:var(--clr-text-muted);">No posts yet. Check back soon!</div>';
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:var(--sp-3xl); color:var(--clr-text-muted);">' +
+                (searchQuery ? `No posts found for "<strong>${searchQuery}</strong>".` : 'No posts yet. Check back soon!') +
+                '</div>';
         } else {
             grid.innerHTML = pagePosts.map(p => `
         <a href="post.html?id=${p.id}" class="card" style="text-decoration:none; color:inherit;">
           <div class="card-image">
-            <img src="${p.image}" alt="${p.title}" loading="lazy">
+            <img src="${p.image || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600'}" alt="${p.title}" loading="lazy">
             <span class="card-category">${p.category}</span>
           </div>
           <div class="card-body">
             <h3>${p.title}</h3>
-            <p>${truncate(p.excerpt, 100)}</p>
+            <p>${truncate(p.excerpt, 110)}</p>
             <div class="card-meta">
               <span>${formatDate(p.date)}</span>
               <span>Read more →</span>
@@ -80,6 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.filterByCategory = (cat) => {
         currentCategory = cat;
+        currentPage = 1;
+        renderPosts();
+    };
+
+    window.onBlogSearch = (val) => {
+        searchQuery = val;
         currentPage = 1;
         renderPosts();
     };

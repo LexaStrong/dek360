@@ -274,9 +274,67 @@ async function syncYouTubeVideos() {
   }
 }
 
+// ——— Scroll-to-Top Button ———
+function injectScrollToTop() {
+  const btn = document.createElement('button');
+  btn.id = 'scrollTopBtn';
+  btn.className = 'scroll-top-btn';
+  btn.setAttribute('aria-label', 'Back to top');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>';
+  document.body.appendChild(btn);
+
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+// ——— Count-Up Animation ———
+function initCountUp() {
+  const els = document.querySelectorAll('.stat-number, .hero-stat .number');
+  if (!els.length) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      if (el.dataset.counted) return;
+      el.dataset.counted = '1';
+
+      const raw = el.textContent.trim();
+      const suffix = raw.match(/[^\d.,]+$/)?.[0] || '';
+      const numStr = raw.replace(/[^\d.]/g, '');
+      const target = parseFloat(numStr);
+      if (isNaN(target)) return;
+
+      const duration = 1800;
+      const start = performance.now();
+      const isFloat = numStr.includes('.');
+
+      function step(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const current = target * ease;
+        el.textContent = (isFloat ? current.toFixed(1) : Math.round(current).toLocaleString()) + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+      observer.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+
+  els.forEach(el => observer.observe(el));
+}
+
 // ——— Init ———
 document.addEventListener('DOMContentLoaded', () => {
   seedDemoData();
   syncYouTubeVideos();
   setTimeout(initFadeIn, 100);
+  setTimeout(initCountUp, 200);
+  injectScrollToTop();
 });

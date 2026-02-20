@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
   injectFooter();
 
   let currentCategory = 'All';
+  let visibleCount = 6;
+  const BATCH_SIZE = 6;
 
   function getVideos() {
     return JSON.parse(localStorage.getItem('dek360_videos') || '[]')
@@ -13,14 +15,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderVideos() {
     const videos = getVideos();
-    const filtered = currentCategory === 'All' ? videos : videos.filter(v => v.category === currentCategory || (currentCategory === 'YouTube' && v.isAuto));
+    let filtered;
+    if (currentCategory === 'YouTube') {
+      filtered = videos.filter(v => v.isAuto);
+    } else if (currentCategory === 'All') {
+      filtered = videos;
+    } else {
+      filtered = videos.filter(v => v.category === currentCategory);
+    }
 
     const grid = document.getElementById('videoGrid');
 
     // Add a sync status indicator if videos are automated
     const hasAuto = videos.some(v => v.isAuto);
     const headerP = document.querySelector('.page-header p');
-    if (hasAuto && !document.querySelector('.sync-badge')) {
+    if (hasAuto && headerP && !document.querySelector('.sync-badge')) {
       const badge = document.createElement('span');
       badge.className = 'sync-badge';
       badge.innerHTML = '● Auto-Synced';
@@ -28,17 +37,19 @@ document.addEventListener('DOMContentLoaded', () => {
       headerP.appendChild(badge);
     }
 
-    if (filtered.length === 0) {
+    const toShow = filtered.slice(0, visibleCount);
+
+    if (toShow.length === 0) {
       grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:var(--sp-3xl); color:var(--clr-text-muted);">No videos yet. Check back soon!</div>';
     } else {
-      grid.innerHTML = filtered.map(v => `
+      grid.innerHTML = toShow.map(v => `
         <div class="video-card ${v.isAuto ? 'auto-video' : ''}">
           <div class="video-wrapper">
             <iframe src="https://www.youtube.com/embed/${v.youtubeId}" title="${v.title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
           </div>
           <div class="video-info">
             <h3>${v.title}</h3>
-            <p>${v.isAuto ? 'YouTube' : v.category} · ${formatDate(v.date)}</p>
+            <p>${v.isAuto ? '<span style="color:var(--clr-success);">● YouTube</span>' : v.category} · ${formatDate(v.date)}</p>
           </div>
         </div>
       `).join('');
@@ -48,6 +59,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.filter-tab').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.cat === currentCategory);
     });
+
+    // Load more button
+    const existing = document.getElementById('loadMoreBtn');
+    if (existing) existing.remove();
+
+    if (filtered.length > visibleCount) {
+      const loadMoreWrap = document.createElement('div');
+      loadMoreWrap.style.cssText = 'text-align:center; margin-top:var(--sp-2xl);';
+      loadMoreWrap.innerHTML = `<button id="loadMoreBtn" class="btn btn-secondary" onclick="loadMoreVideos()">Load More Videos (${filtered.length - visibleCount} remaining)</button>`;
+      grid.parentElement.appendChild(loadMoreWrap);
+    }
   }
 
   // Listen for live sync updates
@@ -57,6 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.filterVideos = (cat) => {
     currentCategory = cat;
+    visibleCount = BATCH_SIZE;
+    renderVideos();
+  };
+
+  window.loadMoreVideos = () => {
+    visibleCount += BATCH_SIZE;
     renderVideos();
   };
 
