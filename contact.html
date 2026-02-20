@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Get in touch with DEK360 Ghana — contact form, social media links, and location info.">
+    <title>Contact — DEK360 Ghana</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+    <div class="page-header">
+        <div class="container">
+            <h1>Get In <span class="highlight">Touch</span></h1>
+            <p>We'd love to hear from you. Reach out for collaborations, feedback, or just to say hi!</p>
+        </div>
+    </div>
+
+    <section class="section">
+        <div class="container">
+            <div class="contact-grid fade-in">
+                <div class="contact-form">
+                    <h2 style="font-size:var(--fs-xl); font-weight:700; margin-bottom:var(--sp-xl);">Send a Message</h2>
+                    <form id="contactForm" onsubmit="handleContactSubmit(event)">
+                        <div class="form-group">
+                            <label for="contactName">Your Name</label>
+                            <input type="text" id="contactName" required placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email Address</label>
+                            <input type="email" id="contactEmail" required placeholder="john@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactSubject">Subject</label>
+                            <input type="text" id="contactSubject" required placeholder="Collaboration Inquiry">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMessage">Message</label>
+                            <textarea id="contactMessage" required
+                                placeholder="Tell us what's on your mind..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%;">Send Message</button>
+                    </form>
+                </div>
+
+                <div class="contact-info">
+                    <div class="contact-card">
+                        <div class="contact-icon" id="iconEmail"></div>
+                        <div>
+                            <h3>Email</h3>
+                            <p>info@dek360ghana.com</p>
+                        </div>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon" id="iconLocation"></div>
+                        <div>
+                            <h3>Location</h3>
+                            <p>Accra, Ghana 🇬🇭</p>
+                        </div>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon" id="iconPhone"></div>
+                        <div>
+                            <h3>Phone</h3>
+                            <p>+233 541 680 823</p>
+                        </div>
+                    </div>
+
+                    <!-- Social Media -->
+                    <div
+                        style="padding:var(--sp-lg); background:var(--grad-card); border:1px solid var(--clr-border); border-radius:var(--radius-lg);">
+                        <h3 style="font-size:var(--fs-base); font-weight:700; margin-bottom:var(--sp-lg);">Follow Us
+                        </h3>
+                        <div id="contactSocial" style="display:flex; flex-wrap:wrap; gap:var(--sp-md);"></div>
+                    </div>
+
+                    <!-- Map Placeholder -->
+                    <div
+                        style="background:var(--grad-card); border:1px solid var(--clr-border); border-radius:var(--radius-lg); overflow:hidden; aspect-ratio:16/9;">
+                        <iframe
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d127066.68493097!2d-0.26335!3d5.6037168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfdf9084b2b7a773%3A0xbed14ed8650e2dd3!2sAccra%2C%20Ghana!5e0!3m2!1sen!2sus!4v1"
+                            width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            injectNav('contact');
+            injectFooter();
+
+            // Inject icons
+            document.getElementById('iconEmail').innerHTML = ICONS.email;
+            document.getElementById('iconLocation').innerHTML = ICONS.location;
+            document.getElementById('iconPhone').innerHTML = ICONS.phone;
+
+            // Social links
+            document.getElementById('contactSocial').innerHTML = SOCIAL_LINKS.map(s =>
+                `<a href="${s.url}" target="_blank" rel="noopener" class="social-link" title="${s.name}" style="width:48px; height:48px; font-size:1.2rem;">${s.icon}</a>`
+            ).join('');
+        });
+
+        function handleContactSubmit(e) {
+            e.preventDefault();
+            showToast('Message sent! We\'ll get back to you soon.');
+            e.target.reset();
+        }
+    </script>
+</body>
+
+</html>
