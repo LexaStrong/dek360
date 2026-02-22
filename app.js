@@ -245,90 +245,74 @@
      MOBILE PAGE SYSTEM
      ========================================== */
   function renderMobilePage(container) {
+    window.scrollTo(0, 0);
     switch (state.mobileTab) {
+      case 'discover': renderMobileDiscover(container); break;
       case 'categories': renderMobileCategories(container); break;
       case 'profile': renderMobileProfile(container); break;
       default: renderMobileHome(container);
     }
 
     // Add mobile footer
-    container.innerHTML += renderFooter();
-    updateMobileBottomNav();
+    container.innerHTML += renderMobileFooter();
   }
 
-  function renderMobileCategories(container) {
-    const cats = DEK360_DATA.categories;
-    container.innerHTML = `
-      <div class="mob-categories-page">
-        <button class="back-btn" onclick="goBack()">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          Back
-        </button>
-        <div class="mob-section-title">All Categories</div>
-        <div class="mob-cat-chips-large">
-          ${cats.map(c => `
-            <div class="mob-cat-card" onclick="navigateTo('category', {category:'${c}'})">
-              <div class="mob-cat-card-icon">${c.charAt(0)}</div>
-              <div class="mob-cat-card-name">${c}</div>
-            </div>
-          `).join('')}
+  function renderMobileFooter() {
+    return `
+      <footer class="mob-footer">
+        <img src="logo.png" class="mob-footer-logo" alt="DEK360" />
+        <p class="mob-footer-desc">DEK360 Ghana is your premier source for national news, politics, and culture. Delivering balanced and insightful reporting since 2026.</p>
+        <div class="mob-footer-links">
+          <a href="#" class="mob-footer-link" onclick="event.preventDefault(); navigateTo('home')">Home</a>
+          <a href="#" class="mob-footer-link" onclick="event.preventDefault(); navigateTo('magazine')">Magazine</a>
+          <a href="#" class="mob-footer-link" onclick="event.preventDefault(); navigateTo('pools')">Pools</a>
         </div>
-      </div>
+        <div class="mob-footer-bottom">
+          © 2026 DEK360 Ghana. All rights reserved.
+        </div>
+      </footer>
     `;
-  }
-
-
-  function setMobileTab(tab) {
-    state.mobileTab = tab;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    renderMobilePage(document.getElementById('app'));
-  }
-
-  window.setMobileTab = setMobileTab;
-
-  function updateMobileBottomNav() {
-    document.querySelectorAll('.mob-nav-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.tab === state.mobileTab);
-    });
   }
 
   /* ---- Mobile Home ---- */
   function renderMobileHome(container) {
     const articles = getAllArticles();
     const breaking = articles.slice(0, 3);
-    const recommendations = articles.slice(3, 9);
-    const activeIdx = 0;
+    const recommendations = articles.slice(3, 10); // Show 7 recs
+    const activeIdx = state.mobileHeroIdx || 0;
 
     container.innerHTML = `
       <div class="mob-home">
-        <!-- Breaking News -->
+        <!-- Breaking News Header -->
         <div class="mob-section-header">
           <span class="mob-section-title">Breaking News</span>
-          <span class="mob-see-all" onclick="setMobileTab('discover')">View all</span>
+          <span class="mob-see-all" onclick="navigateTo('magazine')">View all</span>
         </div>
 
-        <div class="mob-breaking-card" onclick="openMobileArticle('${breaking[0]?.slug}')">
-          <img src="${breaking[0]?.image}" alt="${breaking[0]?.title}" loading="lazy" />
+        <!-- Breaking Hero -->
+        <div class="mob-breaking-card" onclick="openMobileArticle('${breaking[activeIdx]?.slug}')">
+          <img src="${breaking[activeIdx]?.image}" alt="${breaking[activeIdx]?.title}" loading="lazy" />
           <div class="mob-breaking-overlay">
-            <div class="mob-breaking-source">
-              <div class="mob-source-logo">D</div>
-              DEK360 Ghana &bull; ${breaking[0]?.readTime || '5 min'}
+            <span class="article-tag">${breaking[activeIdx]?.tag || breaking[activeIdx]?.category}</span>
+            <div class="mob-breaking-title">${breaking[activeIdx]?.title}</div>
+            <div class="mob-breaking-source" style="margin-top:8px;">
+              <span style="opacity:0.8;">${breaking[activeIdx]?.author} &bull; ${breaking[activeIdx]?.readTime}</span>
             </div>
-            <span class="article-tag" style="margin-bottom:6px; font-size:0.62rem;">${breaking[0]?.tag || breaking[0]?.category}</span>
-            <div class="mob-breaking-title">${breaking[0]?.title}</div>
           </div>
         </div>
 
+        <!-- Hero Indicators -->
         <div class="mob-dot-indicator">
-          ${breaking.map((_, i) => `<div class="mob-dot ${i === activeIdx ? 'active' : ''}"></div>`).join('')}
+          ${breaking.map((_, i) => `
+            <div class="mob-dot ${i === activeIdx ? 'active' : ''}" 
+                 onclick="event.stopPropagation(); state.mobileHeroIdx=${i}; renderMobileHome(document.getElementById('app'))"></div>
+          `).join('')}
         </div>
 
-        <!-- Recommendations -->
-        <div class="mob-section-header" style="margin-top:8px;">
+        <!-- Recommendation Section -->
+        <div class="mob-section-header" style="margin-top:16px;">
           <span class="mob-section-title">Recommendation</span>
-          <span class="mob-see-all" onclick="setMobileTab('discover')">View all</span>
+          <span class="mob-see-all" onclick="navigateTo('magazine')">View all</span>
         </div>
 
         <div class="mob-rec-list">
@@ -337,168 +321,97 @@
               <img class="mob-rec-img" src="${a.thumbnail || a.image}" alt="${a.title}" loading="lazy" />
               <div class="mob-rec-content">
                 <div class="mob-rec-cat">${a.category}</div>
-                <div class="mob-rec-title">${a.title}</div>
+                <div class="mob-rec-title" style="font-size:0.92rem; font-weight:700;">${a.title}</div>
                 <div class="mob-rec-meta">
                   <div class="mob-author-avatar">${a.author.charAt(0)}</div>
-                  <span>${a.author}</span>
-                  <span>&bull;</span>
-                  <span>${a.date}</span>
+                  <span>${a.author} &bull; ${a.date}</span>
                 </div>
               </div>
             </div>
           `).join('')}
         </div>
+        
+        ${renderPagination('home')}
       </div>
     `;
   }
 
   /* ---- Mobile Discover ---- */
   function renderMobileDiscover(container) {
-    const cats = ['All', ...DEK360_DATA.categories.slice(0, 8)];
-    const articles = state.mobileDiscoverCat === 'All'
+    const cats = ['All', ...DEK360_DATA.categories];
+    const category = state.mobileDiscoverCat || 'All';
+    const articles = category === 'All'
       ? getAllArticles()
-      : getArticlesByCategory(state.mobileDiscoverCat);
+      : getArticlesByCategory(category);
+
+    // Simple pagination for demo
+    const page = state.mobDiscoverPage || 1;
+    const perPage = 6;
+    const paginated = articles.slice((page - 1) * perPage, page * perPage);
 
     container.innerHTML = `
       <div class="mob-discover">
         <div class="mob-discover-header">
           <div class="mob-discover-title">Discover</div>
-          <div class="mob-discover-sub">News from all around Ghana</div>
+          <div class="mob-discover-sub">News from all around the world</div>
         </div>
 
         <div class="mob-discover-search" onclick="openSearch()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <span>Search</span>
-          <div class="mob-discover-filter">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <span style="font-size:1rem; margin-left:8px;">Search</span>
+          <div class="mob-discover-filter" style="margin-left:auto;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
             </svg>
           </div>
         </div>
 
-        <div class="mob-cat-chips">
+        <div class="mob-cat-chips" style="display:flex; overflow-x:auto; gap:10px; padding:0 16px 16px; scrollbar-width:none;">
           ${cats.map(c => `
-            <div class="mob-cat-chip ${state.mobileDiscoverCat === c ? 'active' : ''}" onclick="setMobileDiscoverCat('${c}')">${c}</div>
+            <div class="mob-cat-chip ${category === c ? 'active' : ''}" 
+                 onclick="state.mobileDiscoverCat='${c}'; state.mobDiscoverPage=1; renderMobilePage(document.getElementById('app'))"
+                 style="flex-shrink:0; padding:10px 20px; border-radius:20px; font-size:0.85rem; font-weight:600; background:${category === c ? 'var(--accent-red)' : 'var(--bg-primary)'}; color:${category === c ? '#fff' : 'var(--text-secondary)'};">
+              ${c}
+            </div>
           `).join('')}
         </div>
 
-        <div class="mob-discover-list">
-          ${articles.map(a => `
-            <div class="mob-discover-item" onclick="openMobileArticle('${a.slug}')">
-              <img class="mob-discover-img" src="${a.thumbnail || a.image}" alt="${a.title}" loading="lazy" />
-              <div class="mob-discover-content">
-                <div class="mob-discover-cat">${a.category}</div>
-                <div class="mob-discover-title">${a.title}</div>
-                <div class="mob-discover-meta">
+        <div class="mob-discover-list" style="padding:0 16px;">
+          ${paginated.map(a => `
+            <div class="mob-rec-item" onclick="openMobileArticle('${a.slug}')" style="margin-bottom:16px;">
+              <img class="mob-rec-img" src="${a.thumbnail || a.image}" alt="${a.title}" />
+              <div class="mob-rec-content">
+                <div class="mob-rec-cat">${a.category}</div>
+                <div class="mob-rec-title" style="font-size:0.92rem; font-weight:700;">${a.title}</div>
+                <div class="mob-rec-meta">
                   <div class="mob-author-avatar">${a.author.charAt(0)}</div>
-                  <span>${a.author}</span>
-                  <span>&bull;</span>
-                  <span>${a.date}</span>
+                  <span>${a.author} &bull; ${a.date}</span>
                 </div>
               </div>
             </div>
           `).join('')}
         </div>
+
+        ${renderPagination('discover', articles.length, page, perPage)}
       </div>
     `;
   }
 
-  /* ---- Mobile Bookmarks ---- */
-  function renderMobileBookmarks(container) {
-    const saved = state.bookmarks.map(slug => getArticleBySlug(slug)).filter(Boolean);
-    container.innerHTML = `
-      <div class="mob-bookmark-page">
-        <div class="mob-section-title" style="margin-bottom:20px;">Saved Articles</div>
-        ${saved.length === 0
-        ? `<div class="mob-bookmark-empty">
-                    <div class="mob-bookmark-icon">🔖</div>
-                    <div class="mob-bookmark-title">No bookmarks yet</div>
-                    <p style="font-size:0.82rem;">Tap the bookmark icon on any article to save it here.</p>
-                  </div>`
-        : `<div class="mob-rec-list">
-                  ${saved.map(a => `
-                    <div class="mob-rec-item" onclick="openMobileArticle('${a.slug}')">
-                      <img class="mob-rec-img" src="${a.thumbnail || a.image}" alt="${a.title}" loading="lazy" />
-                      <div class="mob-rec-content">
-                        <div class="mob-rec-cat">${a.category}</div>
-                        <div class="mob-rec-title">${a.title}</div>
-                        <div class="mob-rec-meta">
-                          <div class="mob-author-avatar">${a.author.charAt(0)}</div>
-                          <span>${a.author} &bull; ${a.date}</span>
-                        </div>
-                      </div>
-                    </div>
-                  `).join('')}
-                  </div>`
-      }
-      </div>
-    `;
-  }
+  function renderPagination(type, total = 0, current = 1, perPage = 6) {
+    if (type === 'home') return ''; // Design doesn't show pagination on home recommendations, but we can add if needed.
 
-  /* ---- Mobile Profile ---- */
-  function renderMobileProfile(container) {
-    container.innerHTML = `
-      <div class="mob-profile-page">
-        <div class="mob-profile-header">
-          <div class="mob-profile-avatar">👤</div>
-          <div class="mob-profile-name">DEK360 Reader</div>
-          <div class="mob-profile-sub">Ghana News Enthusiast</div>
-          <div class="mob-profile-stat">
-            <div class="mob-stat-item">
-              <div class="mob-stat-num">${state.bookmarks.length}</div>
-              <div class="mob-stat-label">Saved</div>
-            </div>
-            <div class="mob-stat-item">
-              <div class="mob-stat-num">${DEK360_DATA.articles.length}+</div>
-              <div class="mob-stat-label">Articles</div>
-            </div>
-            <div class="mob-stat-item">
-              <div class="mob-stat-num">173K</div>
-              <div class="mob-stat-label">Subscribers</div>
-            </div>
-          </div>
-        </div>
+    const maxPage = Math.ceil(total / perPage);
+    if (maxPage <= 1) return '';
 
-        <div class="mob-profile-menu-item" onclick="toggleTheme()">
-          <div class="mob-profile-icon">🎨</div>
-          Toggle Theme
-          <span class="mob-profile-chevron">›</span>
-        </div>
-        <div class="mob-profile-menu-item" onclick="setMobileTab('bookmark')">
-          <div class="mob-profile-icon">🔖</div>
-          Saved Articles
-          <span class="mob-profile-chevron">›</span>
-        </div>
-        <div class="mob-profile-menu-item" onclick="openSearch()">
-          <div class="mob-profile-icon">🔍</div>
-          Search News
-          <span class="mob-profile-chevron">›</span>
-        </div>
-        <div class="mob-profile-menu-item">
-          <div class="mob-profile-icon">ℹ️</div>
-          About DEK360 Ghana
-          <span class="mob-profile-chevron">›</span>
-        </div>
-
-        <div class="mob-social-section">
-          <div class="mob-social-title">Follow DEK360 Ghana</div>
-          <div class="mob-social-buttons">
-            <a class="mob-social-btn youtube" href="https://www.youtube.com/@DEK360GHANA" target="_blank" rel="noopener">
-              ▶ YouTube
-            </a>
-            <a class="mob-social-btn facebook" href="https://www.facebook.com/DEK360Ghana" target="_blank" rel="noopener">
-              f Facebook
-            </a>
-            <a class="mob-social-btn twitter" href="https://twitter.com/DEK360Ghana" target="_blank" rel="noopener">
-              𝕏 Twitter
-            </a>
-            <a class="mob-social-btn instagram" href="https://www.instagram.com/dek360ghana" target="_blank" rel="noopener">
-              📷 Instagram
-            </a>
-          </div>
-        </div>
+    return `
+      <div class="mob-pagination">
+        <button class="mob-page-btn" ${current === 1 ? 'disabled' : ''} 
+                onclick="state.mobDiscoverPage=${current - 1}; renderMobilePage(document.getElementById('app'))">Prev</button>
+        <span class="mob-page-info">Page ${current} of ${maxPage}</span>
+        <button class="mob-page-btn" ${current === maxPage ? 'disabled' : ''} 
+                onclick="state.mobDiscoverPage=${current + 1}; renderMobilePage(document.getElementById('app'))">Next</button>
       </div>
     `;
   }
@@ -508,20 +421,16 @@
     const article = getArticleBySlug(state.mobileArticle);
     if (!article) return;
 
-    // Remove existing overlay if any
     document.getElementById('mob-article-overlay')?.remove();
 
     const isBookmarked = state.bookmarks.includes(article.slug);
-    const relatedArticles = DEK360_DATA.articles
-      .filter(a => a.category === article.category && a.slug !== article.slug)
-      .slice(0, 3);
 
     const overlay = document.createElement('div');
     overlay.id = 'mob-article-overlay';
     overlay.className = 'mob-article-wrap';
     overlay.innerHTML = `
       <div class="mob-article-hero">
-        <img src="${article.image}" alt="${article.title}" loading="lazy" />
+        <img src="${article.image}" alt="${article.title}" />
         <div class="mob-article-hero-overlay"></div>
         <div class="mob-article-top-bar">
           <button class="mob-top-btn" onclick="closeMobileArticle()" aria-label="Back">
@@ -530,16 +439,14 @@
             </svg>
           </button>
           <div class="mob-top-actions">
-            <button class="mob-top-btn" onclick="toggleMobileBookmark('${article.slug}')" aria-label="Bookmark" id="mobBmBtn">
+            <button class="mob-top-btn" onclick="toggleMobileBookmark('${article.slug}')" id="mobBmBtn">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="${isBookmarked ? 'white' : 'none'}" stroke="currentColor" stroke-width="2">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
               </svg>
             </button>
-            <button class="mob-top-btn" onclick="shareArticle('${article.slug}')" aria-label="Share">
+            <button class="mob-top-btn">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                <path d="M12 5v14M5 12h14"/>
               </svg>
             </button>
           </div>
@@ -547,64 +454,26 @@
       </div>
 
       <div class="mob-article-body">
-        <span class="article-tag" style="margin-bottom:10px; display:inline-block;">${article.tag || article.category}</span>
-        <div class="mob-trending-label">
-          <div class="mob-trending-dot"></div>
-          Trending &bull; ${article.readTime}
-        </div>
-        <h1 class="mob-article-title-main">${article.title}</h1>
-
-        <div class="mob-article-source">
-          <div class="mob-src-logo">${article.author.charAt(0)}</div>
-          <span class="mob-src-name">${article.author}</span>
-          <div class="mob-src-verified">✓</div>
-          <span class="mob-src-time">${article.date}</span>
-        </div>
-
-        <div class="mob-article-text">
-          ${article.body.split('\n\n').map(p => p.trim() ? `<p>${p.trim()}</p>` : '').join('')}
-        </div>
-
-        <div class="social-share-section" style="margin: 30px 0; padding: 20px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
-          <p style="font-weight:700; font-size:0.9rem; margin-bottom:12px;">Share this story</p>
-          <div class="social-links" style="display:flex; gap:12px;">
-            <a class="social-link" href="#" onclick="event.preventDefault(); copyLink()" style="background:var(--bg-primary); width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.2rem;">🔗</a>
-            <a class="social-link" href="https://facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}" target="_blank" style="background:#1877f2; color:#fff; width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.1rem; font-weight:700;">f</a>
-            <a class="social-link" href="https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}" target="_blank" style="background:#000; color:#fff; width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.1rem;">𝕏</a>
-          </div>
-        </div>
-
-        ${relatedArticles.length > 0 ? `
-          <div class="mob-related-section" style="margin-top:40px;">
-            <h3 style="font-family:'Playfair Display', serif; font-size:1.4rem; margin-bottom:16px;">More like this</h3>
-            <div class="mob-news-list">
-              ${relatedArticles.map(a => `
-                <div class="mob-discover-item" onclick="state.mobileArticle='${a.slug}'; renderMobileArticleDetail();">
-                  <img class="mob-discover-img" src="${a.thumbnail || a.image}" alt="${a.title}" />
-                  <div class="mob-discover-content">
-                    <p class="mob-discover-cat">${a.category}</p>
-                    <p class="mob-discover-title">${a.title}</p>
-                    <div class="mob-discover-meta">
-                      <span>${a.date}</span>
-                    </div>
-                  </div>
-                </div>
-              `).join('')}
+        <span class="article-tag" style="background:var(--accent-red); color:#fff; display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.7rem; font-weight:700; margin-bottom:12px;">${article.tag || article.category}</span>
+        <h1 style="font-size:1.5rem; font-weight:800; line-height:1.2; margin-bottom:16px;">${article.title}</h1>
+        
+        <div class="mob-article-source" style="margin-bottom:24px;">
+          <div class="mob-src-logo" style="background:#e53935;">CNN</div>
+          <div style="flex:1;">
+            <div style="display:flex; align-items:center; gap:4px; font-weight:700; font-size:0.9rem;">
+              DEK360 Ghana <span style="color:#1877f2; font-size:0.8rem;">✓</span>
             </div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${article.date}</div>
           </div>
-        ` : ''}
+        </div>
 
-        <button class="back-btn" onclick="closeMobileArticle()" style="margin-top:40px; width:100%;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          Back to feed
-        </button>
+        <div class="mob-article-text" style="font-size:1rem; line-height:1.6; color:var(--text-secondary);">
+          ${article.body.split('\n\n').map(p => p.trim() ? `<p style="margin-bottom:20px;">${p.trim()}</p>` : '').join('')}
+        </div>
       </div>
     `;
 
     document.body.appendChild(overlay);
-    // Lock background scroll
     document.body.style.overflow = 'hidden';
   }
 
