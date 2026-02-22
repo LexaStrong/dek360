@@ -1318,12 +1318,17 @@
      INIT
      ========================================== */
   document.addEventListener('DOMContentLoaded', () => {
+    // Sort categories alphabetically for consistency across all views
+    if (typeof DEK360_DATA !== 'undefined' && DEK360_DATA.categories) {
+      DEK360_DATA.categories.sort((a, b) => a.localeCompare(b));
+    }
+
     // Apply saved theme
     applyTheme(state.theme);
 
-    // Inject mobile bottom nav bar
+    // Inject mobile components
     if (isMobile()) {
-      injectMobileBottomNav();
+      // Bottom nav removed as per request
     }
 
     // Search overlay events
@@ -1367,7 +1372,6 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         renderPage();
-        if (isMobile()) injectMobileBottomNav();
       }, 200);
     });
 
@@ -1384,48 +1388,19 @@
     }
   });
 
-  function injectMobileBottomNav() {
-    if (document.querySelector('.mobile-bottom-nav')) return;
-    const nav = document.createElement('nav');
-    nav.className = 'mobile-bottom-nav';
-    nav.innerHTML = `
-      <a href="#" class="mob-nav-item ${state.mobileTab === 'home' ? 'active' : ''}" onclick="event.preventDefault(); setMobileTab('home')" data-tab="home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>Home</span>
-      </a>
-      <a href="#" class="mob-nav-item ${state.mobileTab === 'discover' ? 'active' : ''}" onclick="event.preventDefault(); setMobileTab('discover')" data-tab="discover">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span>Discover</span>
-      </a>
-      <a href="#" class="mob-nav-item ${state.mobileTab === 'bookmark' ? 'active' : ''}" onclick="event.preventDefault(); setMobileTab('bookmark')" data-tab="bookmark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-        <span>Saved</span>
-      </a>
-      <a href="#" class="mob-nav-item ${state.mobileTab === 'profile' ? 'active' : ''}" onclick="event.preventDefault(); setMobileTab('profile')" data-tab="profile">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Profile</span>
-      </a>
-    `;
-    document.body.appendChild(nav);
-  }
-
   function attachMobileNavbarHandlers() {
     if (!isMobile()) return;
-    const hamburger = document.getElementById('navHamburger');
-    if (hamburger) {
-      hamburger.onclick = () => {
-        state.sidebarOpen = !state.sidebarOpen;
-        hamburger.classList.toggle('active', state.sidebarOpen);
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar) {
-          sidebar.classList.toggle('mobile-open', state.sidebarOpen);
-          renderSidebarContent(sidebar);
-        }
-        document.getElementById('sidebarBackdrop')?.classList.toggle('active', state.sidebarOpen);
+
+    const burgerBtn = document.getElementById('burgerBtn');
+    const mobile = document.getElementById('mobile');
+
+    if (burgerBtn && mobile) {
+      burgerBtn.onclick = () => {
+        mobile.classList.toggle('navigation');
       };
     }
 
-    // Add search and notification icons to mobile navbar
+    // Add search icon to mobile navbar (Notification removed)
     const navInner = document.querySelector('.nav-inner');
     if (navInner && !navInner.querySelector('.mob-nav-right')) {
       const right = document.createElement('div');
@@ -1434,25 +1409,26 @@
         <div class="mob-nav-icon" onclick="openSearch()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
-        <div class="mob-nav-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        </div>
       `;
       navInner.appendChild(right);
     }
+
+    // Sidebar/Menu content
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) renderSidebarContent(sidebar);
   }
 
   function renderSidebarContent(container) {
     container.innerHTML = `
       <div class="sidebar-header" style="justify-content: space-between; align-items: center; display: flex; padding: 20px;">
-        <span style="font-weight:700; font-size:1.2rem;">Menu</span>
-        <button onclick="document.getElementById('navHamburger').click()" style="font-size:1.5rem; background:none; border:none; color:var(--text-primary);">✕</button>
+        <span style="font-weight:700; font-size:1.2rem;">Navigation</span>
+        <button onclick="document.getElementById('burgerBtn').click()" style="font-size:1.5rem; background:none; border:none; color:var(--text-primary);">✕</button>
       </div>
       <div class="sidebar-menu" style="padding: 0 20px;">
-        <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('home')">🏠 Home</a>
-        <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('video')">📺 Video</a>
-        <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('pools')">📊 Pools</a>
-        <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('magazine')">📖 Magazine</a>
+        <a href="#" id="demo1" class="sidebar-link ${state.mobileTab === 'home' ? 'active' : ''}" onclick="event.preventDefault(); switchNavTab('home', 'demo1')">🏠 Home</a>
+        <a href="#" id="demo2" class="sidebar-link ${state.mobileTab === 'discover' ? 'active' : ''}" onclick="event.preventDefault(); switchNavTab('discover', 'demo2')">🔍 Discover</a>
+        <a href="#" id="demo3" class="sidebar-link ${state.mobileTab === 'magazine' ? 'active' : ''}" onclick="event.preventDefault(); switchNavTab('magazine', 'demo3')">📖 Magazine</a>
+        
         <hr style="border:none; border-top:1px solid var(--border); margin: 20px 0;">
         <div style="font-weight:700; font-size:0.9rem; color:var(--text-muted); margin-bottom:12px; text-transform:uppercase;">Categories</div>
         ${DEK360_DATA.categories.map(cat => `
@@ -1462,22 +1438,41 @@
     `;
   }
 
+  function switchNavTab(tab, demoId) {
+    const mobile = document.getElementById('mobile');
+    const demoButtons = ['demo1', 'demo2', 'demo3'];
+
+    // Remove active from all demo buttons
+    demoButtons.forEach(id => {
+      document.getElementById(id)?.classList.remove('active');
+    });
+
+    // Add active to clicked one
+    document.getElementById(demoId)?.classList.add('active');
+
+    // Update mobile container classes
+    mobile.classList.add(demoId);
+    demoButtons.filter(id => id !== demoId).forEach(id => mobile.classList.remove(id));
+    mobile.classList.remove('navigation');
+
+    // Page state logic
+    if (tab === 'magazine') {
+      navigateTo('magazine');
+    } else {
+      setMobileTab(tab);
+    }
+  }
+
   function setMobileTab(tab) {
     state.mobileTab = tab;
-    state.mobileArticle = null; // Close any open article overlay
+    state.mobileArticle = null;
     document.getElementById('mob-article-overlay')?.remove();
     document.body.style.overflow = '';
 
     renderPage();
-    updateMobileBottomNav();
-  }
-
-  function updateMobileBottomNav() {
-    document.querySelectorAll('.mob-nav-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.tab === state.mobileTab);
-    });
   }
 
   window.setMobileTab = setMobileTab;
+  window.switchNavTab = switchNavTab;
 
 })();

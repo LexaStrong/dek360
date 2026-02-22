@@ -2678,7 +2678,9 @@ ol {
     width: 30%;
   }
 }
+
 @media (max-width: 640px) {
+
   /* === Pagination === */
   .mob-pagination {
     display: flex;
@@ -2724,7 +2726,8 @@ ol {
     border-top: 1px solid var(--border);
     text-align: center;
     margin-top: 20px;
-    margin-bottom: 80px; /* Space for bottom nav */
+    margin-bottom: 80px;
+    /* Space for bottom nav */
   }
 
   .mob-footer-logo {
@@ -2759,46 +2762,54 @@ ol {
     padding-top: 24px;
   }
 
-  /* === Mobile Bottom Nav === */
-  .mobile-bottom-nav {
+  /* === New Mobile Navigation Design === */
+  #mobile {
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    overflow-x: hidden;
+  }
+
+  /* When menu is open, shift the body */
+  #mobile.navigation {
+    transform: translateX(280px);
+    overflow: hidden;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 64px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .mobile-sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100%;
     background: var(--bg-secondary);
-    backdrop-filter: blur(12px);
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    z-index: 1000;
-    padding-bottom: env(safe-area-inset-bottom);
-    box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    z-index: 1005;
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    display: block !important;
+    border-right: 1px solid var(--border);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
   }
 
-  .mob-nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 0.7rem;
-    font-weight: 600;
-    transition: var(--transition);
+  #mobile.navigation .mobile-sidebar {
+    transform: translateX(280px);
   }
 
-  .mob-nav-item.active {
+  .sidebar-link.active {
+    background: var(--bg-primary);
     color: var(--accent-red);
+    font-weight: 700;
   }
 
-  .mob-nav-item svg {
-    width: 24px;
-    height: 24px;
+  /* Demo / Tab transitions */
+  #mobile.demo1 #demo1,
+  #mobile.demo2 #demo2,
+  #mobile.demo3 #demo3 {
+    color: var(--accent-red);
+    font-weight: 700;
   }
 
-  /* Navbar Refinements */
+  /* Animation for search icons etc. */
   .mob-nav-right {
     display: flex;
     align-items: center;
