@@ -278,11 +278,21 @@
   function renderMobileHome(container) {
     const articles = getAllArticles();
     const breaking = articles.slice(0, 3);
-    const recommendations = articles.slice(3, 10); // Show 7 recs
+    const recommendations = articles.slice(3, 10);
     const activeIdx = state.mobileHeroIdx || 0;
+    const cats = ['All', ...DEK360_DATA.categories];
+    const activeCat = state.mobileDiscoverCat || 'All';
 
     container.innerHTML = `
       <div class="mob-home">
+        <!-- Back Button & Header -->
+        <div style="display:flex; align-items:center; gap:16px; margin: 16px;">
+          <button class="mob-back-btn" onclick="goBack()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div style="font-size:1.4rem; font-weight:800; font-family:'Playfair Display', serif;">DEK360 Ghana</div>
+        </div>
+
         <!-- Breaking News Header -->
         <div class="mob-section-header">
           <span class="mob-section-title">Breaking News</span>
@@ -306,6 +316,20 @@
           ${breaking.map((_, i) => `
             <div class="mob-dot ${i === activeIdx ? 'active' : ''}" 
                  onclick="event.stopPropagation(); state.mobileHeroIdx=${i}; renderMobileHome(document.getElementById('app'))"></div>
+          `).join('')}
+        </div>
+
+        <!-- Horizontal Category Chips -->
+        <div class="mob-section-header" style="margin-top:16px;">
+          <span class="mob-section-title">Categories</span>
+        </div>
+        <div class="mob-cat-chips" style="display:flex; overflow-x:auto; gap:10px; padding:0 16px 16px; scrollbar-width:none;">
+          ${cats.map(c => `
+            <div class="mob-cat-chip ${activeCat === c ? 'active' : ''}" 
+                 onclick="state.mobileDiscoverCat='${c}'; setMobileTab('discover')"
+                 style="flex-shrink:0; padding:10px 20px; border-radius:32px; font-size:0.85rem; font-weight:600; background:${activeCat === c ? 'var(--accent-red)' : 'var(--bg-primary)'}; color:${activeCat === c ? '#fff' : 'var(--text-secondary)'}; border: 1px solid var(--border);">
+              ${c}
+            </div>
           `).join('')}
         </div>
 
@@ -351,8 +375,14 @@
 
     container.innerHTML = `
       <div class="mob-discover">
-        <div class="mob-discover-header">
-          <div class="mob-discover-title">Discover</div>
+        <div style="display:flex; align-items:center; gap:16px; margin: 16px;">
+          <button class="mob-back-btn" onclick="goBack()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div style="font-size:1.4rem; font-weight:800; font-family:'Playfair Display', serif;">Discover</div>
+        </div>
+
+        <div class="mob-discover-header" style="padding-top:0;">
           <div class="mob-discover-sub">News from all around the world</div>
         </div>
 
@@ -372,7 +402,7 @@
           ${cats.map(c => `
             <div class="mob-cat-chip ${category === c ? 'active' : ''}" 
                  onclick="state.mobileDiscoverCat='${c}'; state.mobDiscoverPage=1; renderMobilePage(document.getElementById('app'))"
-                 style="flex-shrink:0; padding:10px 20px; border-radius:20px; font-size:0.85rem; font-weight:600; background:${category === c ? 'var(--accent-red)' : 'var(--bg-primary)'}; color:${category === c ? '#fff' : 'var(--text-secondary)'};">
+                 style="flex-shrink:0; padding:10px 20px; border-radius:32px; font-size:0.85rem; font-weight:600; background:${category === c ? 'var(--accent-red)' : 'var(--bg-primary)'}; color:${category === c ? '#fff' : 'var(--text-secondary)'}; border: 1px solid var(--border);">
               ${c}
             </div>
           `).join('')}
@@ -433,10 +463,8 @@
         <img src="${article.image}" alt="${article.title}" />
         <div class="mob-article-hero-overlay"></div>
         <div class="mob-article-top-bar">
-          <button class="mob-top-btn" onclick="closeMobileArticle()" aria-label="Back">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
+          <button class="mob-back-btn" onclick="closeMobileArticle()" aria-label="Back" style="background:rgba(255,255,255,0.25); backdrop-filter:blur(8px); border:none; color:#fff;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <div class="mob-top-actions">
             <button class="mob-top-btn" onclick="toggleMobileBookmark('${article.slug}')" id="mobBmBtn">
@@ -444,9 +472,10 @@
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
               </svg>
             </button>
-            <button class="mob-top-btn">
+            <button class="mob-top-btn" onclick="shareArticle('${article.slug}')">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
               </svg>
             </button>
           </div>
@@ -455,21 +484,25 @@
 
       <div class="mob-article-body">
         <span class="article-tag" style="background:var(--accent-red); color:#fff; display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.7rem; font-weight:700; margin-bottom:12px;">${article.tag || article.category}</span>
-        <h1 style="font-size:1.5rem; font-weight:800; line-height:1.2; margin-bottom:16px;">${article.title}</h1>
+        <h1 style="font-size:1.52rem; font-weight:800; line-height:1.2; margin-bottom:16px; font-family:'Playfair Display', serif;">${article.title}</h1>
         
         <div class="mob-article-source" style="margin-bottom:24px;">
-          <div class="mob-src-logo" style="background:#e53935;">CNN</div>
+          <div class="mob-src-logo" style="background:var(--accent-red);">${article.author.charAt(0)}</div>
           <div style="flex:1;">
-            <div style="display:flex; align-items:center; gap:4px; font-weight:700; font-size:0.9rem;">
+            <div style="display:flex; align-items:center; gap:4px; font-weight:700; font-size:0.95rem;">
               DEK360 Ghana <span style="color:#1877f2; font-size:0.8rem;">✓</span>
             </div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">${article.date}</div>
+            <div style="font-size:0.78rem; color:var(--text-muted);">${article.date} &bull; ${article.readTime}</div>
           </div>
         </div>
 
-        <div class="mob-article-text" style="font-size:1rem; line-height:1.6; color:var(--text-secondary);">
+        <div class="mob-article-text" style="font-size:1.05rem; line-height:1.6; color:var(--text-secondary);">
           ${article.body.split('\n\n').map(p => p.trim() ? `<p style="margin-bottom:20px;">${p.trim()}</p>` : '').join('')}
         </div>
+
+        <button class="mob-page-btn" onclick="closeMobileArticle()" style="width:100%; margin-top:32px; padding:14px; border-radius:16px;">
+          Back to list
+        </button>
       </div>
     `;
 
@@ -1288,7 +1321,10 @@
     // Apply saved theme
     applyTheme(state.theme);
 
-    // Inject mobile bottom nav bar (REMOVED)
+    // Inject mobile bottom nav bar
+    if (isMobile()) {
+      injectMobileBottomNav();
+    }
 
     // Search overlay events
     const searchBtn = document.getElementById('searchBtn');
@@ -1296,6 +1332,10 @@
     const searchInput = document.getElementById('searchInput');
 
     if (searchBtn) searchBtn.addEventListener('click', openSearch);
+
+    // Fix: Re-attach mobile specific navbar handlers
+    attachMobileNavbarHandlers();
+
     if (searchOverlay) {
       searchOverlay.addEventListener('click', (e) => {
         if (e.target === searchOverlay) closeSearch();
@@ -1325,7 +1365,10 @@
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => renderPage(), 200);
+      resizeTimer = setTimeout(() => {
+        renderPage();
+        if (isMobile()) injectMobileBottomNav();
+      }, 200);
     });
 
     // Render initial page
@@ -1340,5 +1383,101 @@
       }, 10000); // User requested 10 seconds
     }
   });
+
+  function injectMobileBottomNav() {
+    if (document.querySelector('.mobile-bottom-nav')) return;
+    const nav = document.createElement('nav');
+    nav.className = 'mobile-bottom-nav';
+    nav.innerHTML = `
+      <a href="#" class="mob-nav-item ${state.mobileTab === 'home' ? 'active' : ''}" onclick="event.preventDefault(); setMobileTab('home')" data-tab="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="#" class="mob-nav-item ${state.mobileTab === 'discover' ? 'active' : ''}" onclick="event.preventDefault(); setMobileTab('discover')" data-tab="discover">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Discover</span>
+      </a>
+      <a href="#" class="mob-nav-item ${state.mobileTab === 'bookmark' ? 'active' : ''}" onclick="event.preventDefault(); setMobileTab('bookmark')" data-tab="bookmark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>Saved</span>
+      </a>
+      <a href="#" class="mob-nav-item ${state.mobileTab === 'profile' ? 'active' : ''}" onclick="event.preventDefault(); setMobileTab('profile')" data-tab="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Profile</span>
+      </a>
+    `;
+    document.body.appendChild(nav);
+  }
+
+  function attachMobileNavbarHandlers() {
+    if (!isMobile()) return;
+    const hamburger = document.getElementById('navHamburger');
+    if (hamburger) {
+      hamburger.onclick = () => {
+        state.sidebarOpen = !state.sidebarOpen;
+        hamburger.classList.toggle('active', state.sidebarOpen);
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+          sidebar.classList.toggle('mobile-open', state.sidebarOpen);
+          renderSidebarContent(sidebar);
+        }
+        document.getElementById('sidebarBackdrop')?.classList.toggle('active', state.sidebarOpen);
+      };
+    }
+
+    // Add search and notification icons to mobile navbar
+    const navInner = document.querySelector('.nav-inner');
+    if (navInner && !navInner.querySelector('.mob-nav-right')) {
+      const right = document.createElement('div');
+      right.className = 'mob-nav-right';
+      right.innerHTML = `
+        <div class="mob-nav-icon" onclick="openSearch()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="mob-nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+      `;
+      navInner.appendChild(right);
+    }
+  }
+
+  function renderSidebarContent(container) {
+    container.innerHTML = `
+      <div class="sidebar-header" style="justify-content: space-between; align-items: center; display: flex; padding: 20px;">
+        <span style="font-weight:700; font-size:1.2rem;">Menu</span>
+        <button onclick="document.getElementById('navHamburger').click()" style="font-size:1.5rem; background:none; border:none; color:var(--text-primary);">✕</button>
+      </div>
+      <div class="sidebar-menu" style="padding: 0 20px;">
+        <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('home')">🏠 Home</a>
+        <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('video')">📺 Video</a>
+        <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('pools')">📊 Pools</a>
+        <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('magazine')">📖 Magazine</a>
+        <hr style="border:none; border-top:1px solid var(--border); margin: 20px 0;">
+        <div style="font-weight:700; font-size:0.9rem; color:var(--text-muted); margin-bottom:12px; text-transform:uppercase;">Categories</div>
+        ${DEK360_DATA.categories.map(cat => `
+          <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('category', {category:'${cat}'})">${cat}</a>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function setMobileTab(tab) {
+    state.mobileTab = tab;
+    state.mobileArticle = null; // Close any open article overlay
+    document.getElementById('mob-article-overlay')?.remove();
+    document.body.style.overflow = '';
+
+    renderPage();
+    updateMobileBottomNav();
+  }
+
+  function updateMobileBottomNav() {
+    document.querySelectorAll('.mob-nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.tab === state.mobileTab);
+    });
+  }
+
+  window.setMobileTab = setMobileTab;
 
 })();
