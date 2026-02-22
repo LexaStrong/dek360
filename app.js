@@ -1503,7 +1503,7 @@
       setTimeout(() => {
         loader.style.opacity = '0';
         setTimeout(() => loader.remove(), 500);
-      }, 300);
+      }, 10000); // User requested 10 seconds
     }
   });
 

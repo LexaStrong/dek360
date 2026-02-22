@@ -38,9 +38,11 @@
 
     applyAdmTheme(admState.theme);
     updateBadges();
-    showView('dashboard');
 
-    // Initial loader in admin.html is simplified after first view
+    // Initial loader in admin.html stays for 10 seconds
+    setTimeout(() => {
+      showView('dashboard');
+    }, 10000);
   }
 
   function savePosts() {
