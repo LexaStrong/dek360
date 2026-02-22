@@ -1283,6 +1283,7 @@
     if (hamburger) {
       hamburger.onclick = () => {
         state.sidebarOpen = !state.sidebarOpen;
+        hamburger.classList.toggle('active', state.sidebarOpen);
         if (sidebar) {
           sidebar.classList.toggle('mobile-open', state.sidebarOpen);
           sidebar.innerHTML = `
@@ -1310,6 +1311,7 @@
     if (backdrop) {
       backdrop.onclick = () => {
         state.sidebarOpen = false;
+        hamburger?.classList.remove('active');
         sidebar?.classList.remove('mobile-open');
         backdrop.classList.remove('active');
       };
@@ -1417,44 +1419,7 @@
     // Apply saved theme
     applyTheme(state.theme);
 
-    // Inject mobile bottom nav bar (always present in DOM)
-    if (!document.getElementById('mobileBottomNav')) {
-      const nav = document.createElement('nav');
-      nav.id = 'mobileBottomNav';
-      nav.className = 'mobile-bottom-nav';
-      nav.setAttribute('aria-label', 'Mobile navigation');
-      nav.innerHTML = `
-              <div class="mob-nav-item active" data-tab="home" onclick="setMobileTab('home')">
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-                <div class="mob-nav-dot"></div>
-                Home
-              </div>
-              <div class="mob-nav-item" data-tab="discover" onclick="setMobileTab('discover')">
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                <div class="mob-nav-dot"></div>
-                Discover
-              </div>
-              <div class="mob-nav-item" data-tab="categories" onclick="setMobileTab('categories')">
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
-                </svg>
-                <div class="mob-nav-dot"></div>
-                Categories
-              </div>
-              <div class="mob-nav-item" data-tab="profile" onclick="setMobileTab('profile')">
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-                <div class="mob-nav-dot"></div>
-                Profile
-              </div>
-            `;
-      document.body.appendChild(nav);
-    }
+    // Inject mobile bottom nav bar (REMOVED)
 
     // Search overlay events
     const searchBtn = document.getElementById('searchBtn');
