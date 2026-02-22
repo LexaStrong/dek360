@@ -15,6 +15,7 @@
     searchQuery: '',
     filterCat: 'all',
     filterStatus: 'all',
+    history: [], // Simple history for back button
   };
 
   /* =============================================
@@ -38,6 +39,8 @@
     applyAdmTheme(admState.theme);
     updateBadges();
     showView('dashboard');
+
+    // Initial loader in admin.html is simplified after first view
   }
 
   function savePosts() {
@@ -91,10 +94,37 @@
     return m[category] || 'red';
   }
 
+  function renderAdmBackButton(style = '') {
+    return `
+      <button class="adm-btn adm-btn-ghost adm-btn-sm" 
+              onclick="admGoBack()" 
+              style="margin-bottom:16px; display:inline-flex; align-items:center; gap:6px; ${style}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back
+      </button>
+    `;
+  }
+
+  function admGoBack() {
+    if (admState.history.length > 1) {
+      admState.history.pop(); // Current
+      const prev = admState.history.pop();
+      showView(prev.viewId, prev.slug, false, true);
+    } else {
+      showView('dashboard');
+    }
+  }
+  window.admGoBack = admGoBack;
+
   /* =============================================
      VIEW ROUTER
      ============================================= */
-  function showView(viewId, slug, isNew) {
+  function showView(viewId, slug, isNew, isBack = false) {
+    if (!isBack) {
+      admState.history.push({ viewId, slug });
+    }
     admState.view = viewId;
     admState.editingSlug = slug || null;
     setNavActive(viewId);
@@ -110,12 +140,19 @@
 
     // slight delay to let spinner show for UX feel
     setTimeout(() => {
+      // Add back button to all views except dashboard
+      const backBtnHtml = viewId !== 'dashboard' ? renderAdmBackButton() : '';
+      const viewWrap = document.createElement('div');
+      viewWrap.innerHTML = backBtnHtml;
+      content.innerHTML = '';
+      content.appendChild(viewWrap);
+
       switch (viewId) {
-        case 'dashboard': renderDashboard(content); break;
-        case 'posts': renderPosts(content); break;
-        case 'editor': renderEditor(content, admState.editingSlug, isNew); break;
-        case 'categories': renderCategories(content); break;
-        case 'videos': renderVideos(content); break;
+        case 'dashboard': renderDashboard(content); break; // Dashboard renders its own layout
+        case 'posts': renderPosts(viewWrap); break;
+        case 'editor': renderEditor(viewWrap, admState.editingSlug, isNew); break;
+        case 'categories': renderCategories(viewWrap); break;
+        case 'videos': renderVideos(viewWrap); break;
         default: renderDashboard(content);
       }
     }, 80);

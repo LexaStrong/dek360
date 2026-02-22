@@ -18,6 +18,7 @@
     mobileArticle: null,        // slug of article open in mobile detail view
     mobileDiscoverCat: 'All',   // active chip in discover
     bookmarks: JSON.parse(localStorage.getItem('dek360-bookmarks') || '[]'),
+    history: [], // For back button
   };
 
   /* ==========================================
@@ -40,6 +41,17 @@
      ========================================== */
   function isMobile() { return window.innerWidth <= 640; }
 
+  function renderBackButton(style = '') {
+    return `
+      <button class="back-btn" onclick="goBack()" style="${style}">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back
+      </button>
+    `;
+  }
+
   function toggleBookmark(slug) {
     const idx = state.bookmarks.indexOf(slug);
     if (idx === -1) {
@@ -56,6 +68,13 @@
      ROUTER
      ========================================== */
   function navigate(page, params = {}) {
+    // Save current state to history before changing
+    state.history.push({
+      page: state.currentPage,
+      category: state.currentCategory,
+      slug: state.currentSlug
+    });
+
     state.currentPage = page;
     state.currentCategory = params.category || null;
     state.currentSlug = params.slug || null;
@@ -64,6 +83,98 @@
     if (isMobile() && page === 'article' && params.slug) {
       state.mobileArticle = params.slug;
       renderMobileArticleDetail();
+      return;
+    }
+
+    // Robust SPA Category & Home Filtering (Desktop)
+    const canDoSPA = !isMobile() && (page === 'category' || page === 'home') && document.querySelector('.main-layout');
+    if (canDoSPA) {
+      const contentMain = document.querySelector('.content-main');
+      const layout = document.querySelector('.main-layout');
+
+      if (contentMain && layout) {
+        contentMain.style.opacity = '0';
+        // Remove existing right sidebar if it exists to be replaced or removed
+        const existingRight = layout.querySelector('.sidebar-right');
+        if (existingRight) existingRight.style.opacity = '0';
+
+        setTimeout(() => {
+          if (page === 'home') {
+            const featured = getFeaturedArticles();
+            const latest = getAllArticles(8);
+            const related = DEK360_DATA.articles.slice(0, 3);
+            const trending = DEK360_DATA.trendingVideos.slice(0, 3);
+
+            contentMain.innerHTML = `
+              ${state.history.length > 0 ? renderBackButton('margin-top:24px; margin-bottom: 8px;') : ''}
+              ${renderBreadcrumb(['Home'])}
+              <div class="section-header"><h2 class="section-title"><span class="section-title-accent">LIVE</span> Latest News</h2></div>
+              ${featured.length > 0 ? renderHeroGrid(featured) : ''}
+              <div class="section-header" style="margin-top:28px"><h2 class="section-title">${featured[0]?.category || 'Top Story'}</h2></div>
+              ${featured[0] ? renderFeaturedCard(featured[0]) : ''}
+              <div class="section-header" style="margin-top:32px"><h2 class="section-title">Recent Stories</h2><a class="see-all-link" href="#" onclick="event.preventDefault(); navigateTo('magazine')">See all ›</a></div>
+              <div class="news-grid">${latest.slice(2, 8).map(renderNewsCard).join('')}</div>
+              <div class="section-header" style="margin-top:36px"><h2 class="section-title">🎬 Trending Videos</h2><a class="see-all-link" href="#" onclick="event.preventDefault(); navigateTo('video')">View All ›</a></div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px; margin-bottom:8px;">
+                ${trending.map(v => renderVideoMiniCard(v)).join('')}
+              </div>
+            `;
+            // Update or add right sidebar
+            if (existingRight) {
+              existingRight.outerHTML = renderRightSidebar(related);
+            } else {
+              layout.insertAdjacentHTML('beforeend', renderRightSidebar(related));
+            }
+          } else {
+            const cat = state.currentCategory;
+            const articles = getArticlesByCategory(cat);
+            const total = articles.length;
+            const related = articles.slice(0, 3);
+            const catColors = { Politics: '#e53935', National: '#3b82f6', International: '#8b5cf6', Business: '#f59e0b', Finance: '#10b981', Health: '#ef4444', Technology: '#0ea5e9', Entertainment: '#ec4899', Sports: '#16a34a', Culture: '#d97706', Defense: '#6366f1', Media: '#db2777', Jobs: '#059669', Energy: '#eab308', Kids: '#f97316', Regulation: '#7c3aed' };
+            const color = catColors[cat] || '#e53935';
+
+            contentMain.innerHTML = `
+              ${renderBackButton('margin-top:24px;')}
+              ${renderBreadcrumb(['Home', 'Category', cat])}
+              <div class="category-page-header" style="background: linear-gradient(135deg, ${color} 0%, ${color}cc 100%); margin-top:24px;">
+                <h1 class="category-page-title">${cat}</h1>
+                <p class="category-page-count">${total} article${total !== 1 ? 's' : ''} in this category</p>
+              </div>
+              ${total === 0 ? `
+                <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+                  <div style="font-size:3rem; margin-bottom:16px;">📰</div>
+                  <p style="font-size:1.1rem; font-weight:600;">No articles yet in ${cat}</p>
+                </div>
+              ` : `
+                <div class="news-grid">${articles.map(renderNewsCard).join('')}</div>
+              `}
+            `;
+            // Update or add right sidebar
+            if (existingRight) {
+              existingRight.outerHTML = renderRightSidebar(related);
+            } else {
+              layout.insertAdjacentHTML('beforeend', renderRightSidebar(related));
+            }
+          }
+          contentMain.style.opacity = '1';
+          const newRight = layout.querySelector('.sidebar-right');
+          if (newRight) {
+            newRight.style.opacity = '0';
+            void newRight.offsetWidth;
+            newRight.style.opacity = '1';
+          }
+        }, 150);
+      }
+
+      // Update sidebar active state
+      document.querySelectorAll('.category-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.cat === state.currentCategory);
+      });
+      document.querySelectorAll('.nav-link').forEach(el => {
+        el.classList.toggle('active', el.dataset.page === page);
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -84,6 +195,25 @@
 
     renderPage();
   }
+
+  function goBack() {
+    if (state.history.length === 0) {
+      navigate('home');
+      return;
+    }
+    const prevState = state.history.pop();
+    state.currentPage = prevState.page;
+    state.currentCategory = prevState.category;
+    state.currentSlug = prevState.slug;
+
+    if (isMobile() && state.mobileArticle) {
+      closeMobileArticle();
+    }
+
+    renderPage();
+  }
+
+  window.goBack = goBack;
 
   /* ==========================================
      RENDER DISPATCH
@@ -116,14 +246,39 @@
      ========================================== */
   function renderMobilePage(container) {
     switch (state.mobileTab) {
-      case 'home': renderMobileHome(container); break;
-      case 'discover': renderMobileDiscover(container); break;
-      case 'bookmark': renderMobileBookmarks(container); break;
+      case 'categories': renderMobileCategories(container); break;
       case 'profile': renderMobileProfile(container); break;
       default: renderMobileHome(container);
     }
+
+    // Add mobile footer
+    container.innerHTML += renderFooter();
     updateMobileBottomNav();
   }
+
+  function renderMobileCategories(container) {
+    const cats = DEK360_DATA.categories;
+    container.innerHTML = `
+      <div class="mob-categories-page">
+        <button class="back-btn" onclick="goBack()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <div class="mob-section-title">All Categories</div>
+        <div class="mob-cat-chips-large">
+          ${cats.map(c => `
+            <div class="mob-cat-card" onclick="navigateTo('category', {category:'${c}'})">
+              <div class="mob-cat-card-icon">${c.charAt(0)}</div>
+              <div class="mob-cat-card-name">${c}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
 
   function setMobileTab(tab) {
     state.mobileTab = tab;
@@ -357,6 +512,10 @@
     document.getElementById('mob-article-overlay')?.remove();
 
     const isBookmarked = state.bookmarks.includes(article.slug);
+    const relatedArticles = DEK360_DATA.articles
+      .filter(a => a.category === article.category && a.slug !== article.slug)
+      .slice(0, 3);
+
     const overlay = document.createElement('div');
     overlay.id = 'mob-article-overlay';
     overlay.className = 'mob-article-wrap';
@@ -366,19 +525,18 @@
         <div class="mob-article-hero-overlay"></div>
         <div class="mob-article-top-bar">
           <button class="mob-top-btn" onclick="closeMobileArticle()" aria-label="Back">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <polyline points="15 18 9 12 15 6"/>
             </svg>
           </button>
           <div class="mob-top-actions">
             <button class="mob-top-btn" onclick="toggleMobileBookmark('${article.slug}')" aria-label="Bookmark" id="mobBmBtn">
-              ${isBookmarked ? '🔖' : '🔖'}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="${isBookmarked ? 'white' : 'none'}" stroke="currentColor" stroke-width="2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="${isBookmarked ? 'white' : 'none'}" stroke="currentColor" stroke-width="2">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
               </svg>
             </button>
             <button class="mob-top-btn" onclick="shareArticle('${article.slug}')" aria-label="Share">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
                 <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
@@ -397,8 +555,8 @@
         <h1 class="mob-article-title-main">${article.title}</h1>
 
         <div class="mob-article-source">
-          <div class="mob-src-logo">D</div>
-          <span class="mob-src-name">DEK360 Ghana</span>
+          <div class="mob-src-logo">${article.author.charAt(0)}</div>
+          <span class="mob-src-name">${article.author}</span>
           <div class="mob-src-verified">✓</div>
           <span class="mob-src-time">${article.date}</span>
         </div>
@@ -406,6 +564,42 @@
         <div class="mob-article-text">
           ${article.body.split('\n\n').map(p => p.trim() ? `<p>${p.trim()}</p>` : '').join('')}
         </div>
+
+        <div class="social-share-section" style="margin: 30px 0; padding: 20px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+          <p style="font-weight:700; font-size:0.9rem; margin-bottom:12px;">Share this story</p>
+          <div class="social-links" style="display:flex; gap:12px;">
+            <a class="social-link" href="#" onclick="event.preventDefault(); copyLink()" style="background:var(--bg-primary); width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.2rem;">🔗</a>
+            <a class="social-link" href="https://facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}" target="_blank" style="background:#1877f2; color:#fff; width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.1rem; font-weight:700;">f</a>
+            <a class="social-link" href="https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}" target="_blank" style="background:#000; color:#fff; width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.1rem;">𝕏</a>
+          </div>
+        </div>
+
+        ${relatedArticles.length > 0 ? `
+          <div class="mob-related-section" style="margin-top:40px;">
+            <h3 style="font-family:'Playfair Display', serif; font-size:1.4rem; margin-bottom:16px;">More like this</h3>
+            <div class="mob-news-list">
+              ${relatedArticles.map(a => `
+                <div class="mob-discover-item" onclick="state.mobileArticle='${a.slug}'; renderMobileArticleDetail();">
+                  <img class="mob-discover-img" src="${a.thumbnail || a.image}" alt="${a.title}" />
+                  <div class="mob-discover-content">
+                    <p class="mob-discover-cat">${a.category}</p>
+                    <p class="mob-discover-title">${a.title}</p>
+                    <div class="mob-discover-meta">
+                      <span>${a.date}</span>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <button class="back-btn" onclick="closeMobileArticle()" style="margin-top:40px; width:100%;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back to feed
+        </button>
       </div>
     `;
 
@@ -459,6 +653,7 @@
         <div class="main-layout">
           ${renderSidebar()}
           <main class="content-main">
+            ${state.history.length > 0 ? renderBackButton('margin-top:24px; margin-bottom: 8px;') : ''}
             ${renderBreadcrumb(['Home'])}
             <div class="section-header">
               <h2 class="section-title">
@@ -572,6 +767,7 @@
     container.innerHTML = `
       <div class="page-wrapper">
         <div class="video-page-wrap">
+          ${renderBackButton('margin-bottom:24px;')}
           ${renderBreadcrumb(['Home', 'Video'])}
           <div class="section-header" style="margin-bottom:28px">
             <h1 class="section-title" style="font-size:1.8rem;">
@@ -665,26 +861,32 @@
     };
     const color = catColors[cat] || '#e53935';
 
+    const related = articles.slice(0, 3);
     container.innerHTML = `
       <div class="page-wrapper">
-        <div class="category-page-wrap">
-          ${renderBreadcrumb(['Home', 'Category', cat])}
-          <div class="category-page-header" style="background: linear-gradient(135deg, ${color} 0%, ${color}cc 100%);">
-            <h1 class="category-page-title">${cat}</h1>
-            <p class="category-page-count">${total} article${total !== 1 ? 's' : ''} in this category</p>
-          </div>
+        <div class="main-layout">
+          ${renderSidebar()}
+          <main class="content-main">
+            ${renderBackButton('margin-top:24px;')}
+            ${renderBreadcrumb(['Home', 'Category', cat])}
+            <div class="category-page-header" style="background: linear-gradient(135deg, ${color} 0%, ${color}cc 100%); margin-top:24px;">
+              <h1 class="category-page-title">${cat}</h1>
+              <p class="category-page-count">${total} article${total !== 1 ? 's' : ''} in this category</p>
+            </div>
 
-          ${total === 0 ? `
-            <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
-              <div style="font-size:3rem; margin-bottom:16px;">📰</div>
-              <p style="font-size:1.1rem; font-weight:600;">No articles yet in ${cat}</p>
-              <p style="font-size:0.9rem; margin-top:8px;">Check back soon for the latest ${cat} news.</p>
-            </div>
-          ` : `
-            <div class="news-grid">
-              ${articles.map(renderNewsCard).join('')}
-            </div>
-          `}
+            ${total === 0 ? `
+              <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+                <div style="font-size:3rem; margin-bottom:16px;">📰</div>
+                <p style="font-size:1.1rem; font-weight:600;">No articles yet in ${cat}</p>
+                <p style="font-size:0.9rem; margin-top:8px;">Check back soon for the latest ${cat} news.</p>
+              </div>
+            ` : `
+              <div class="news-grid">
+                ${articles.map(renderNewsCard).join('')}
+              </div>
+            `}
+          </main>
+          ${renderRightSidebar(related)}
         </div>
         ${renderFooter()}
       </div>
@@ -715,14 +917,12 @@
       return;
     }
 
-    const related = getRelatedArticles(article.category, article.slug, 4);
+    const related = DEK360_DATA.articles.filter(a => a.category === article.category && a.slug !== article.slug).slice(0, 3);
 
     container.innerHTML = `
       <div class="page-wrapper">
-        <div style="max-width:1200px; margin:0 auto; padding:0 24px;">
-          <a class="article-back" href="#" onclick="event.preventDefault(); history.back()">
-            ← Back
-          </a>
+        <div style="max-width:1200px; margin:0 auto; padding:24px 24px 0;">
+          ${renderBackButton()}
           ${renderBreadcrumb(['Home', article.category, 'Article'])}
         </div>
 
@@ -751,20 +951,19 @@
             ${article.body.split('\n\n').map(p => p.trim() ? `<p>${p.trim()}</p>` : '').join('')}
           </div>
 
-          <div class="article-share">
-            <span class="share-label">Share this story:</span>
-            <button class="share-btn share-btn-fb" onclick="window.open('https://facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href))">
-              f Facebook
-            </button>
-            <button class="share-btn share-btn-tw" onclick="window.open('https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=' + encodeURIComponent(window.location.href))">
-              𝕏 Twitter
-            </button>
-            <button class="share-btn share-btn-wa" onclick="window.open('https://wa.me/?text=${encodeURIComponent(article.title + ' ' + window.location.href)}')">
-              WhatsApp
-            </button>
-            <button class="share-btn share-btn-copy" onclick="copyLink()">
-              🔗 Copy Link
-            </button>
+          <div class="article-share" style="margin-top:40px; padding-top:20px; border-top:1px solid var(--border);">
+            <span class="share-label" style="font-weight:700; display:block; margin-bottom:16px;">Share this story:</span>
+            <div style="display:flex; gap:16px;">
+              <button class="share-btn" onclick="window.open('https://facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href))" style="display:flex; align-items:center; gap:10px; padding:12px 24px; background:#1877f2; color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer; font-size:1rem;">
+                f Facebook
+              </button>
+              <button class="share-btn" onclick="window.open('https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=' + encodeURIComponent(window.location.href))" style="display:flex; align-items:center; gap:10px; padding:12px 24px; background:#000; color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer; font-size:1rem;">
+                𝕏 Twitter
+              </button>
+              <button class="share-btn" onclick="copyLink()" style="display:flex; align-items:center; gap:10px; padding:12px 24px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border); border-radius:12px; font-weight:700; cursor:pointer; font-size:1rem;">
+                🔗 Copy Link
+              </button>
+            </div>
           </div>
 
           ${related.length > 0 ? `
@@ -832,6 +1031,7 @@
     container.innerHTML = `
       <div class="page-wrapper">
         <div class="pools-page-wrap">
+          ${renderBackButton('margin-bottom:24px;')}
           ${renderBreadcrumb(['Home', 'Polls'])}
           <div class="section-header" style="margin-bottom:28px">
             <h1 class="section-title" style="font-size:1.8rem;">📊 Ghana Polls</h1>
@@ -894,6 +1094,7 @@
     container.innerHTML = `
       <div class="page-wrapper">
         <div class="video-page-wrap">
+          ${renderBackButton('margin-bottom:24px;')}
           ${renderBreadcrumb(['Home', 'Magazine'])}
           <div class="section-header" style="margin-bottom:28px">
             <h1 class="section-title" style="font-size:1.8rem;">📰 DEK360 Magazine</h1>
@@ -1075,7 +1276,6 @@
      ATTACH EVENT HANDLERS
      ========================================== */
   function attachHandlers() {
-    // Mobile sidebar toggle
     const hamburger = document.getElementById('navHamburger');
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
@@ -1083,7 +1283,26 @@
     if (hamburger) {
       hamburger.onclick = () => {
         state.sidebarOpen = !state.sidebarOpen;
-        sidebar?.classList.toggle('mobile-open', state.sidebarOpen);
+        if (sidebar) {
+          sidebar.classList.toggle('mobile-open', state.sidebarOpen);
+          sidebar.innerHTML = `
+            <div class="sidebar-header" style="justify-content: space-between; align-items: center; display: flex; padding: 20px;">
+              <span style="font-weight:700; font-size:1.2rem;">Menu</span>
+              <button onclick="document.getElementById('navHamburger').click()" style="font-size:1.5rem; background:none; border:none; color:var(--text-primary);">✕</button>
+            </div>
+            <div class="sidebar-menu" style="padding: 0 20px;">
+              <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('home')">🏠 Home</a>
+              <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('video')">📺 Video</a>
+              <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('pools')">📊 Pools</a>
+              <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('magazine')">📖 Magazine</a>
+              <hr style="border:none; border-top:1px solid var(--border); margin: 20px 0;">
+              <div style="font-weight:700; font-size:0.9rem; color:var(--text-muted); margin-bottom:12px; text-transform:uppercase;">Categories</div>
+              ${DEK360_DATA.categories.map(cat => `
+                <a href="#" class="sidebar-link" onclick="event.preventDefault(); navigateTo('category', {category:'${cat}'})">${cat}</a>
+              `).join('')}
+            </div>
+          `;
+        }
         backdrop?.classList.toggle('active', state.sidebarOpen);
       };
     }
@@ -1206,28 +1425,28 @@
       nav.setAttribute('aria-label', 'Mobile navigation');
       nav.innerHTML = `
               <div class="mob-nav-item active" data-tab="home" onclick="setMobileTab('home')">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
                 <div class="mob-nav-dot"></div>
                 Home
               </div>
               <div class="mob-nav-item" data-tab="discover" onclick="setMobileTab('discover')">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
                 <div class="mob-nav-dot"></div>
                 Discover
               </div>
-              <div class="mob-nav-item" data-tab="bookmark" onclick="setMobileTab('bookmark')">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+              <div class="mob-nav-item" data-tab="categories" onclick="setMobileTab('categories')">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
                 </svg>
                 <div class="mob-nav-dot"></div>
-                Saved
+                Categories
               </div>
               <div class="mob-nav-item" data-tab="profile" onclick="setMobileTab('profile')">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                 </svg>
                 <div class="mob-nav-dot"></div>
@@ -1277,6 +1496,15 @@
 
     // Render initial page
     renderPage();
+
+    // Fade out loader
+    const loader = document.querySelector('.logo-loader-wrap');
+    if (loader) {
+      setTimeout(() => {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.remove(), 500);
+      }, 300);
+    }
   });
 
 })();

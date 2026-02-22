@@ -141,7 +141,15 @@
         <!-- Content Area -->
         <div class="adm-content" id="admContent">
             <!-- Filled by JS -->
-            <div class="adm-loading">Loading...</div>
+            <div class="logo-loader-wrap full-area">
+                <div class="loader-content">
+                    <div class="loader-logo-container">
+                        <div class="loader-ring"></div>
+                        <img src="assets/logo.png" alt="DEK360 Ghana" class="loader-logo-img" />
+                    </div>
+                    <p class="loader-text">Loading Admin Panel...</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -162,6 +170,16 @@
 
     <script src="data.js"></script>
     <script src="admin.js"></script>
+    <!-- Failsafe: Hide loader if JS fails -->
+    <script>
+        setTimeout(() => {
+            const loader = document.querySelector('.logo-loader-wrap');
+            if (loader && !document.querySelector('.adm-stats-grid')) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 400);
+            }
+        }, 3000);
+    </script>
 </body>
 
 </html>
