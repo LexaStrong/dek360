@@ -21,33 +21,65 @@
   /* =============================================
      SETUP & HELPERS
      ============================================= */
-  function admInit() {
-    // Clone articles into local mutable state
-    admState.posts = JSON.parse(JSON.stringify(DEK360_DATA.articles));
-    // Load admin-saved posts from localStorage
-    const saved = localStorage.getItem('dek360-adm-posts');
-    if (saved) {
-      try {
-        const extra = JSON.parse(saved);
-        // Merge: user-created posts come first
-        admState.posts = [...extra, ...admState.posts.filter(
-          p => !extra.some(e => e.slug === p.slug)
-        )];
-      } catch (_) { }
+  async function uploadToSupabase(file, bucket = 'images') {
+    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+    const { data, error } = await window.supabaseClient.storage
+      .from(bucket)
+      .upload(fileName, file);
+
+    if (error) {
+      console.error('Upload error:', error);
+      admToast('❌ Upload failed: ' + error.message);
+      return null;
+    }
+
+    const { data: { publicUrl } } = window.supabaseClient.storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  }
+
+  async function admInit() {
+    // Check Authentication
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (!session) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // Load posts from Supabase
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Clear local posts if we got data from DB, otherwise fall back to data.js
+      if (data && data.length > 0) {
+        admState.posts = data;
+      } else {
+        admState.posts = JSON.parse(JSON.stringify(DEK360_DATA.articles));
+      }
+    } catch (err) {
+      console.warn('Supabase fetch failed, falling back to local data:', err);
+      admState.posts = JSON.parse(JSON.stringify(DEK360_DATA.articles));
     }
 
     applyAdmTheme(admState.theme);
     updateBadges();
 
-    // Initial loader in admin.html stays for 10 seconds
-    setTimeout(() => {
-      showView('dashboard');
-    }, 10000);
+    applyAdmTheme(admState.theme);
+    updateBadges();
+
+    // Show dashboard immediately
+    showView('dashboard');
   }
 
   function savePosts() {
-    // Only save posts that aren't in original data (or modified ones)
-    localStorage.setItem('dek360-adm-posts', JSON.stringify(admState.posts));
+    // Legacy localStorage save removed in favor of Supabase real-time persistence
   }
 
   function applyAdmTheme(theme) {
@@ -594,7 +626,7 @@
   /* =============================================
      EDITOR ACTIONS
      ============================================= */
-  function savePost(isNew) {
+  async function savePost(isNew) {
     const title = document.getElementById('edTitle')?.value.trim();
     const excerpt = document.getElementById('edExcerpt')?.value.trim();
     const body = document.getElementById('edContent')?.value.trim();
@@ -611,47 +643,43 @@
     const now = new Date();
     const date = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-    if (isNew) {
-      const exists = admState.posts.find(p => p.slug === slug);
-      if (exists) { admToast('⚠️ A post with this slug already exists.'); return; }
+    const postData = {
+      slug,
+      title,
+      headline: excerpt,
+      body,
+      category,
+      tag: category.toUpperCase(),
+      author: author || 'DEK360 Staff',
+      date,
+      readTime: readTime || '5 min read',
+      image: image || `https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80`,
+      thumbnail: image || `https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&q=70`,
+      views: isNew ? '0' : (admState.posts.find(p => p.slug === slug)?.views || '0'),
+      shares: isNew ? '0' : (admState.posts.find(p => p.slug === slug)?.shares || '0'),
+      featured: false,
+    };
 
-      const newPost = {
-        slug,
-        title,
-        headline: excerpt,
-        body,
-        category,
-        tag: category.toUpperCase(),
-        author: author || 'DEK360 Staff',
-        date,
-        readTime: readTime || '5 min read',
-        image: image || `https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80`,
-        thumbnail: image || `https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&q=70`,
-        views: '0',
-        shares: '0',
-        featured: false,
-      };
-      admState.posts.unshift(newPost);
-      savePosts();
+    try {
+      const { error } = await window.supabaseClient
+        .from('posts')
+        .upsert(postData, { onConflict: 'slug' });
+
+      if (error) throw error;
+
+      if (isNew) {
+        admState.posts.unshift(postData);
+      } else {
+        const idx = admState.posts.findIndex(p => p.slug === slug);
+        if (idx !== -1) admState.posts[idx] = postData;
+      }
+
       updateBadges();
-      admToast('✅ Post published successfully!');
+      admToast(isNew ? '✅ Post published successfully!' : '✅ Changes saved!');
       showView('posts');
-    } else {
-      const idx = admState.posts.findIndex(p => p.slug === admState.editingSlug);
-      if (idx === -1) { admToast('❌ Post not found.'); return; }
-
-      admState.posts[idx] = {
-        ...admState.posts[idx],
-        title, headline: excerpt, body, category,
-        tag: category.toUpperCase(),
-        author: author || 'DEK360 Staff',
-        readTime: readTime || '5 min read',
-        image: image || admState.posts[idx].image,
-        thumbnail: image || admState.posts[idx].thumbnail,
-      };
-      savePosts();
-      admToast('✅ Changes saved!');
-      showView('posts');
+    } catch (err) {
+      console.error('Supabase Save Error:', err);
+      admToast('❌ Save failed: ' + err.message);
     }
   }
 
@@ -711,27 +739,29 @@
     if (url) edInsert(`[${text}](${url})`);
   }
 
-  function handleImageUpload(input) {
+  async function handleImageUpload(input) {
     const file = input.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const url = e.target.result;
+
+    admToast('Uploading image...');
+    const url = await uploadToSupabase(file);
+    if (url) {
       const inputUrl = document.getElementById('edImage');
       if (inputUrl) {
         inputUrl.value = url;
         previewImage(url);
       }
-    };
-    reader.readAsDataURL(file);
+      admToast('✅ Image uploaded!');
+    }
   }
 
-  function edHandleFile(input) {
+  async function edHandleFile(input) {
     const file = input.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const url = e.target.result;
+
+    admToast('Uploading file...');
+    const url = await uploadToSupabase(file);
+    if (url) {
       const type = file.type;
       if (type.startsWith('image/')) {
         edInsert(`\n![${file.name}](${url})\n`);
@@ -740,9 +770,8 @@
       } else {
         edInsert(`\n[📄 Download ${file.name}](${url})\n`);
       }
-      admToast(`✅ File "${file.name}" ready`);
-    };
-    reader.readAsDataURL(file);
+      admToast(`✅ File "${file.name}" uploaded`);
+    }
   }
 
   /* =============================================
@@ -760,20 +789,37 @@
     document.getElementById('admModal').classList.add('open');
   }
 
-  function doDelete() {
+  async function doDelete() {
     if (!pendingDeleteSlug) return;
-    admState.posts = admState.posts.filter(p => p.slug !== pendingDeleteSlug);
-    savePosts();
-    updateBadges();
-    closeModal();
-    admToast('🗑 Post deleted.');
-    showView('posts');
+    try {
+      const { error } = await window.supabaseClient
+        .from('posts')
+        .delete()
+        .eq('slug', pendingDeleteSlug);
+
+      if (error) throw error;
+
+      admState.posts = admState.posts.filter(p => p.slug !== pendingDeleteSlug);
+      updateBadges();
+      closeModal();
+      admToast('🗑 Post deleted.');
+      showView('posts');
+    } catch (err) {
+      console.error('Supabase Delete Error:', err);
+      admToast('❌ Delete failed: ' + err.message);
+    }
   }
 
   function closeModal() {
     document.getElementById('admModal').classList.remove('open');
     pendingDeleteSlug = null;
   }
+
+  async function admLogout() {
+    await window.supabaseClient.auth.signOut();
+    window.location.href = 'login.html';
+  }
+  window.admLogout = admLogout;
 
   /* =============================================
      FILTER HANDLERS

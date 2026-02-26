@@ -85,7 +85,7 @@ The framework is expected to take effect immediately, with joint operations begi
       readTime: "4 min read",
       views: "8.7K",
       shares: "1.8K",
-      featured: false,
+      featured: true,
       tag: "SECURITY"
     },
     {
@@ -174,8 +174,8 @@ Travel agencies in Accra noted a spike in inquiries following the announcement, 
       readTime: "3 min read",
       views: "22.1K",
       shares: "9.4K",
-      featured: false,
-      tag: "TRAVEL"
+      featured: true,
+      tag: "TRANSFER"
     },
     {
       id: "n3",
@@ -836,6 +836,41 @@ The government has set a target of 10% renewable energy in Ghana's electricity m
       category: "Media",
       views: "1.4M",
       duration: "13:58"
+    }
+  ],
+
+  // Mock Polls data
+  pools: [
+    {
+      id: "poll1",
+      question: "Who do you think will win the 2028 General Elections?",
+      totalVotes: 15420,
+      options: [
+        { label: "NPP", votes: 6200, color: "var(--accent-blue)" },
+        { label: "NDC", votes: 7500, color: "var(--accent-red)" },
+        { label: "Other", votes: 1720, color: "var(--text-muted)" }
+      ]
+    },
+    {
+      id: "poll2",
+      question: "Will the Black Stars qualify for the 2026 World Cup?",
+      totalVotes: 32100,
+      options: [
+        { label: "Yes, definitely", votes: 24500, color: "var(--success)" },
+        { label: "No, they won't", votes: 5200, color: "var(--danger)" },
+        { label: "Not sure yet", votes: 2400, color: "var(--warning)" }
+      ]
+    },
+    {
+      id: "poll3",
+      question: "What is the biggest issue facing Ghana today?",
+      totalVotes: 8900,
+      options: [
+        { label: "Economy & Inflation", votes: 4100, color: "var(--accent-red)" },
+        { label: "Unemployment", votes: 2800, color: "var(--accent-blue)" },
+        { label: "Corruption", votes: 1500, color: "var(--text-primary)" },
+        { label: "Infrastructure", votes: 500, color: "var(--text-muted)" }
+      ]
     }
   ]
 };
